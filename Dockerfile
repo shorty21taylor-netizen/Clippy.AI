@@ -13,12 +13,17 @@ COPY . .
 # DATABASE_URL is only needed at runtime, but Next.js page-data collection
 # imports route files that touch the db module. The lazy proxy in lib/db.ts
 # defers the real connection until first use, so a placeholder is enough here.
+# These are only needed at runtime. Lazy init in lib/ means build succeeds
+# with placeholders; real values come from Railway environment variables.
 ARG DATABASE_URL=postgresql://build:build@localhost:5432/build
+ARG ENCRYPTION_KEY=buildsecretbuildsecretbuildsecr
+ARG CLERK_SECRET_KEY=sk_test_build
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_build
 ENV DATABASE_URL=${DATABASE_URL}
+ENV ENCRYPTION_KEY=${ENCRYPTION_KEY}
+ENV CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 
-# NEXT_PUBLIC_* vars are baked into the client bundle at build time.
-# Railway passes env vars to the build context automatically, so these
-# will be picked up from the Railway environment variables panel.
 RUN npm run build
 
 EXPOSE 3000
