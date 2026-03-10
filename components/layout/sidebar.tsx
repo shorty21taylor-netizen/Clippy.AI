@@ -36,16 +36,23 @@ export function Sidebar() {
 
   return (
     <motion.aside
-      animate={{ width: expanded ? 220 : 64 }}
+      animate={{ width: expanded ? 240 : 64 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      className="relative flex h-screen flex-col bg-[--bg-surface] overflow-hidden shrink-0"
-      style={{ borderRight: "1px solid var(--border)" }}
+      className="relative flex h-screen flex-col bg-[--bg-surface] overflow-hidden shrink-0 z-40"
+      style={{ borderRight: "1px solid var(--border-subtle)" }}
     >
       {/* Logo / Brand */}
-      <div className="flex h-14 items-center px-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div
+        className="flex h-14 items-center px-4 shrink-0"
+        style={{ borderBottom: "1px solid var(--border-subtle)" }}
+      >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-7 w-7 rounded-[8px] bg-[--accent] flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(0,113,227,0.30)]">
-            <span className="text-white font-bold text-xs tracking-tight">C</span>
+          {/* Gradient logo mark */}
+          <div
+            className="h-8 w-8 rounded-[10px] flex items-center justify-center shrink-0"
+            style={{ background: "var(--gradient-primary)" }}
+          >
+            <span className="text-white font-bold text-sm tracking-tight select-none">C</span>
           </div>
           <AnimatePresence>
             {expanded && (
@@ -54,7 +61,7 @@ export function Sidebar() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.15 }}
-                className="font-semibold text-[15px] text-[--text-primary] tracking-[-0.02em] whitespace-nowrap"
+                className="font-bold text-[15px] text-[--text-primary] tracking-[-0.025em] whitespace-nowrap"
               >
                 Clippy.AI
               </motion.span>
@@ -69,7 +76,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 overflow-y-auto py-2">
+      <nav className="flex-1 overflow-y-auto px-[10px] py-3">
         {NAV_ITEMS.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -80,24 +87,32 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex items-center gap-[10px] mx-2 rounded-[var(--radius-sm)] px-3 py-2 mb-[1px]",
-                "text-[14px] transition-all duration-150 cursor-pointer",
+                "relative flex items-center gap-[10px] rounded-[var(--radius-md)] px-[10px] py-2 mb-[1px]",
+                "text-[14px] transition-all duration-200 cursor-pointer select-none",
                 isActive
-                  ? "bg-[--accent-subtle] text-[--accent] font-medium"
-                  : "text-[--text-secondary] font-normal hover:text-[--text-primary] hover:bg-[rgba(0,0,0,0.04)]"
+                  ? "font-medium text-[#4F46E5]"
+                  : "font-normal text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-subtle]"
               )}
+              style={isActive ? {
+                background: "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(59,130,246,0.08) 100%)",
+                border: "1px solid rgba(99,102,241,0.15)",
+              } : {}}
             >
-              {/* Active left-edge indicator bar */}
+              {/* Gradient left accent bar on active */}
               {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-[--accent]" />
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                  style={{ background: "var(--gradient-primary)" }}
+                />
               )}
 
               <item.icon
-                className={cn(
-                  "shrink-0 transition-colors",
-                  isActive ? "text-[--accent]" : "text-[--text-tertiary]"
-                )}
                 size={17}
+                className={cn(
+                  "shrink-0 transition-all duration-150",
+                  isActive ? "opacity-100" : "opacity-60"
+                )}
+                style={{ color: isActive ? "#4F46E5" : undefined }}
               />
               <AnimatePresence>
                 {expanded && (
@@ -118,20 +133,18 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom actions */}
-      <div className="px-2 py-3 space-y-[1px]" style={{ borderTop: "1px solid var(--border)" }}>
+      <div
+        className="px-[10px] py-3 space-y-[1px]"
+        style={{ borderTop: "1px solid var(--border-subtle)" }}
+      >
         <Link
           href="/dashboard/settings"
-          className="flex items-center gap-[10px] mx-0 rounded-[var(--radius-sm)] px-3 py-2 text-[14px] font-normal text-[--text-secondary] hover:text-[--text-primary] hover:bg-[rgba(0,0,0,0.04)] transition-all duration-150"
+          className="flex items-center gap-[10px] rounded-[var(--radius-md)] px-[10px] py-2 text-[14px] font-normal text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-subtle] transition-all duration-150 cursor-pointer"
         >
-          <Settings size={17} className="text-[--text-tertiary] shrink-0" />
+          <Settings size={17} className="opacity-60 shrink-0" />
           <AnimatePresence>
             {expanded && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="whitespace-nowrap"
-              >
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                 Settings
               </motion.span>
             )}
@@ -140,41 +153,26 @@ export function Sidebar() {
 
         <button
           onClick={() => signOut({ redirectUrl: "/sign-in" })}
-          className="w-full flex items-center gap-[10px] rounded-[var(--radius-sm)] px-3 py-2 text-[14px] font-normal text-[--text-tertiary] hover:text-[#FF3B30] hover:bg-[rgba(255,59,48,0.06)] transition-all duration-150"
+          className="w-full flex items-center gap-[10px] rounded-[var(--radius-md)] px-[10px] py-2 text-[14px] font-normal text-[--text-secondary] hover:text-[--accent-rose] hover:bg-[--accent-rose-light] transition-all duration-150 cursor-pointer"
         >
-          <LogOut size={17} className="shrink-0" />
+          <LogOut size={17} className="opacity-60 shrink-0" />
           <AnimatePresence>
             {expanded && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="whitespace-nowrap"
-              >
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                 Sign out
               </motion.span>
             )}
           </AnimatePresence>
         </button>
 
-        {/* Collapse toggle */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center gap-[10px] rounded-[var(--radius-sm)] px-3 py-2 text-[--text-tertiary] hover:text-[--text-secondary] hover:bg-[rgba(0,0,0,0.04)] transition-all duration-150"
+          className="w-full flex items-center gap-[10px] rounded-[var(--radius-md)] px-[10px] py-2 text-[14px] text-[--text-tertiary] hover:text-[--text-secondary] hover:bg-[--bg-subtle] transition-all duration-150 cursor-pointer"
         >
-          {expanded ? (
-            <ChevronsLeft size={15} className="shrink-0" />
-          ) : (
-            <ChevronsRight size={15} className="shrink-0" />
-          )}
+          {expanded ? <ChevronsLeft size={15} className="shrink-0" /> : <ChevronsRight size={15} className="shrink-0" />}
           <AnimatePresence>
             {expanded && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="whitespace-nowrap text-[12px]"
-              >
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap text-[12px]">
                 Collapse
               </motion.span>
             )}

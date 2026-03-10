@@ -7,8 +7,11 @@ export default function SignUpPage() {
         {/* Brand */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2.5 mb-4">
-            <div className="h-9 w-9 rounded-[12px] bg-[--accent] flex items-center justify-center shadow-[0_4px_12px_rgba(0,113,227,0.30)]">
-              <span className="text-white font-bold">C</span>
+            <div
+              className="h-9 w-9 rounded-[12px] flex items-center justify-center"
+              style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow-indigo)" }}
+            >
+              <span className="text-white font-bold text-sm">C</span>
             </div>
             <span className="font-semibold text-xl text-[--text-primary] tracking-[-0.025em]">
               Clippy.AI

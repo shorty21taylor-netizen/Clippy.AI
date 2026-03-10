@@ -1,84 +1,119 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-/* ─── Apple / iOS 26 Design System ──────────────────────────────────────────
-   Reference: apple.com product pages, 2024-2025
-   Principle: Every surface earns its place. White space is intentional.
-──────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   FUTURISTIC AI SAAS DESIGN SYSTEM — Clippy.AI
+   Direction: Linear × Vercel × Sci-Fi OS
+   Foundation: White base + bold color pops + alive interactions
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Backgrounds — Apple's layered surface system ─────────────────────── */
-  --bg-base:              #F5F5F7;   /* page background — Apple off-white   */
-  --bg-surface:           #FFFFFF;   /* cards, sidebar, elevated surfaces   */
-  --bg-surface-secondary: #F5F5F7;   /* secondary surface (inside cards)    */
-  --bg-input:             #F5F5F7;   /* form input background               */
+  /* ── Core surfaces — white-first system ──────────────────────────────── */
+  --bg-page:           #FAFAFA;
+  --bg-surface:        #FFFFFF;
+  --bg-surface-raised: #FFFFFF;
+  --bg-subtle:         #F4F4F5;
+  --bg-input:          #F8F8F9;
+  --bg-hover:          #ECECED;
 
-  /* Dark surface aliases for hero/feature sections */
-  --color-bg-dark:           #000000;
-  --color-bg-dark-secondary: #1D1D1F;
-  --color-bg-dark-elevated:  #2D2D2F;
-
-  /* Legacy aliases — keep backward compat with existing bg-[--bg-card] etc */
+  /* Legacy aliases so existing bg-[--bg-base] etc. still resolve */
+  --bg-base:     var(--bg-page);
   --bg-card:     var(--bg-surface);
   --bg-elevated: var(--bg-surface);
   --bg-modal:    var(--bg-surface);
 
-  /* ── Text — Apple's exact hierarchy ──────────────────────────────────── */
-  --text-primary:   #1D1D1F;   /* Apple's primary — never pure black        */
-  --text-secondary: #6E6E73;   /* Apple's secondary grey                    */
-  --text-tertiary:  #AEAEB2;   /* Captions, metadata, placeholders          */
-  --text-accent:    #0071E3;   /* Apple blue — links, accents               */
-  --text-placeholder: #AEAEB2;
+  /* ── Bold accent palette — the energy of the product ─────────────────── */
+  --accent-blue:          #3B82F6;
+  --accent-blue-light:    rgba(59, 130, 246, 0.10);
+  --accent-blue-border:   rgba(59, 130, 246, 0.20);
+  --accent-violet:        #7C3AED;
+  --accent-violet-light:  rgba(124, 58, 237, 0.10);
+  --accent-violet-border: rgba(124, 58, 237, 0.20);
+  --accent-emerald:       #10B981;
+  --accent-emerald-light: rgba(16, 185, 129, 0.10);
+  --accent-emerald-border:rgba(16, 185, 129, 0.20);
+  --accent-amber:         #F59E0B;
+  --accent-amber-light:   rgba(245, 158, 11, 0.10);
+  --accent-amber-border:  rgba(245, 158, 11, 0.20);
+  --accent-rose:          #F43F5E;
+  --accent-rose-light:    rgba(244, 63, 94, 0.10);
+  --accent-rose-border:   rgba(244, 63, 94, 0.20);
+  --accent-cyan:          #06B6D4;
+  --accent-cyan-light:    rgba(6, 182, 212, 0.10);
+  --accent-cyan-border:   rgba(6, 182, 212, 0.20);
+  --accent-indigo:        #6366F1;
 
-  /* Legacy on-dark text */
-  --color-text-on-dark:           #F5F5F7;
-  --color-text-on-dark-secondary: #A1A1A6;
+  /* Primary gradient — hero elements, CTAs, active states */
+  --gradient-primary: linear-gradient(135deg, #6366F1 0%, #3B82F6 50%, #06B6D4 100%);
+  --gradient-energy:  linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%);
+  --gradient-growth:  linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
 
-  /* ── Accent ───────────────────────────────────────────────────────────── */
-  --accent:        #0071E3;
-  --accent-hover:  #0077ED;
-  --accent-muted:  rgba(0, 113, 227, 0.10);
-  --accent-subtle: rgba(0, 113, 227, 0.08);   /* slightly lighter tint     */
+  /* Legacy accent aliases */
+  --accent:        var(--accent-blue);
+  --accent-hover:  #2563EB;
+  --accent-muted:  var(--accent-blue-light);
+  --accent-subtle: var(--accent-blue-light);
 
-  /* ── Borders — barely visible, like Apple ────────────────────────────── */
-  --border:        rgba(0, 0, 0, 0.06);   /* default — extremely light      */
-  --border-medium: rgba(0, 0, 0, 0.10);   /* slightly more visible          */
+  /* ── Text ─────────────────────────────────────────────────────────────── */
+  --text-primary:     #09090B;
+  --text-secondary:   #71717A;
+  --text-tertiary:    #A1A1AA;
+  --text-on-color:    #FFFFFF;
+  --text-placeholder: #A1A1AA;
+  --text-accent:      var(--accent-blue);
+
+  /* ── Borders ──────────────────────────────────────────────────────────── */
+  --border-default: #E4E4E7;
+  --border-subtle:  #F4F4F5;
+  --border-strong:  #D4D4D8;
 
   /* Legacy border aliases */
-  --border-subtle:  var(--border);
-  --border-default: var(--border-medium);
-  --border-strong:  rgba(0, 0, 0, 0.20);
+  --border:         var(--border-default);
+  --border-medium:  var(--border-strong);
 
-  /* ── Shadows — soft and layered, never harsh ─────────────────────────── */
-  --shadow-card:       0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
-  --shadow-elevated:   0 16px 48px rgba(0, 0, 0, 0.12);
-  --shadow-modal:      0 32px 80px rgba(0, 0, 0, 0.20);
-  --shadow-dropdown:   0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
+  /* ── Radius ───────────────────────────────────────────────────────────── */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  24px;
+  --radius-3xl:  32px;
+  --radius-pill: 9999px;
 
-  /* ── Radius — Apple's generous rounding ──────────────────────────────── */
-  --radius-sm:   10px;   /* nav items, small chips, icon containers         */
-  --radius-md:   16px;   /* inputs, medium cards                            */
-  --radius-lg:   20px;   /* standard cards                                  */
-  --radius-xl:   28px;   /* hero cards, large modals                        */
-  --radius-pill: 980px;  /* buttons, badges                                 */
+  /* ── Shadows ──────────────────────────────────────────────────────────── */
+  --shadow-sm:         0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md:         0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg:         0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-xl:         0 20px 60px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-card:       var(--shadow-md);
+  --shadow-card-hover: var(--shadow-lg);
+  --shadow-modal:      var(--shadow-xl);
+  --shadow-dropdown:   var(--shadow-lg);
+  --shadow-elevated:   var(--shadow-lg);
+  --shadow-glow-blue:   0 0 24px rgba(59, 130, 246, 0.25), 0 0 8px rgba(59, 130, 246, 0.15);
+  --shadow-glow-violet: 0 0 24px rgba(124, 58, 237, 0.25), 0 0 8px rgba(124, 58, 237, 0.15);
+  --shadow-glow-indigo: 0 4px 14px rgba(99, 102, 241, 0.35);
+  --shadow-btn-primary: 0 4px 14px rgba(99, 102, 241, 0.35);
+  --shadow-btn-hover:   0 6px 20px rgba(99, 102, 241, 0.45);
 
-  /* ── Typography ───────────────────────────────────────────────────────── */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-               'Inter', 'Helvetica Neue', Arial, sans-serif;
+  /* ── Transitions ──────────────────────────────────────────────────────── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
 
   /* ── Semantic status ──────────────────────────────────────────────────── */
-  --color-success:        #34C759;
-  --color-success-text:   #1A7F37;
-  --color-success-bg:     rgba(52, 199, 89, 0.12);
-  --color-warning:        #FF9F0A;
-  --color-warning-text:   #9A6000;
-  --color-warning-bg:     rgba(255, 159, 10, 0.12);
-  --color-error:          #FF3B30;
-  --color-error-text:     #C41E3A;
-  --color-error-bg:       rgba(255, 59, 48, 0.12);
+  --color-success:        #10B981;
+  --color-success-text:   #059669;
+  --color-success-bg:     rgba(16, 185, 129, 0.08);
+  --color-warning:        #F59E0B;
+  --color-warning-text:   #D97706;
+  --color-warning-bg:     rgba(245, 158, 11, 0.08);
+  --color-error:          #F43F5E;
+  --color-error-text:     #E11D48;
+  --color-error-bg:       rgba(244, 63, 94, 0.08);
 
-  /* Legacy status aliases */
   --status-success:       var(--color-success-text);
   --status-success-muted: var(--color-success-bg);
   --status-warning:       var(--color-warning-text);
@@ -90,98 +125,224 @@
 
   /* ── Sidebar sizing ───────────────────────────────────────────────────── */
   --sidebar-collapsed: 64px;
-  --sidebar-expanded:  220px;
+  --sidebar-expanded:  240px;
 }
 
 @theme inline {
-  --color-background: #F5F5F7;
-  --color-foreground: #1D1D1F;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-               'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --color-background: #FAFAFA;
+  --color-foreground: #09090B;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 /* ─── Base reset ─────────────────────────────────────────────────────────── */
-
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
+  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
 }
 
 body {
-  background-color: var(--bg-base);
+  background: var(--bg-page);
   color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 15px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
   line-height: 1.6;
-  letter-spacing: -0.01em;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
+  background: var(--border-strong);
+  border-radius: 99px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+::-webkit-scrollbar-thumb:hover { background: #BDBDC6; }
 
 /* ─── Selection ──────────────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(0, 113, 227, 0.18);
+  background: rgba(99, 102, 241, 0.15);
   color: var(--text-primary);
 }
 
 /* ─── Focus ring ─────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.20);
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
-/* ─── Page enter animation ───────────────────────────────────────────────── */
-@keyframes pageEnter {
-  from { opacity: 0; transform: translateY(12px); }
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.8); }
+}
+@keyframes shineSwipe {
+  from { left: -100%; }
+  to   { left: 150%; }
+}
+
+/* ─── Utility classes ────────────────────────────────────────────────────── */
+
+/* Animated gradient text */
+.gradient-text {
+  background: var(--gradient-primary);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, #F4F4F5 25%, #E4E4E7 50%, #F4F4F5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Glow utilities */
+.glow-blue   { box-shadow: var(--shadow-glow-blue); }
+.glow-violet { box-shadow: var(--shadow-glow-violet); }
+.glow-emerald { box-shadow: 0 0 20px rgba(16, 185, 129, 0.20); }
+
+/* Page entrance */
 .page-enter {
-  animation: pageEnter 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: fadeUp 0.4s var(--ease-smooth) forwards;
 }
 
-/* ─── Scroll-reveal utility ──────────────────────────────────────────────── */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-up {
-  animation: fade-up 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+/* Animated status dot */
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--color-success);
+  border-radius: 99px;
+  animation: pulse-dot 2s ease infinite;
 }
 
-/* ─── Typography utilities ───────────────────────────────────────────────── */
-.text-display {
-  font-size: clamp(48px, 6vw, 96px);
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.05;
+/* Hero card background decorations via pseudo-elements */
+.hero-card {
+  position: relative;
+  overflow: hidden;
 }
-.text-headline {
-  font-size: clamp(32px, 4vw, 56px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
-.text-title {
-  font-size: clamp(20px, 2.5vw, 28px);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
+.hero-card::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  right: 120px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
-.text-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
+
+/* Stat card — decorative gradient orb via ::before */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  pointer-events: none;
+  /* Color set via --card-orb-color CSS custom property */
+  background: radial-gradient(circle, var(--card-orb-color, rgba(99,102,241,0.08)) 0%, transparent 70%);
+}
+
+/* Primary button shine sweep */
+.btn-primary-shine {
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-primary);
+  color: white;
+}
+.btn-primary-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 400ms ease;
+  pointer-events: none;
+}
+.btn-primary-shine:hover::after {
+  left: 150%;
+}
+
+/* Action card bottom accent strip */
+.action-card {
+  position: relative;
+  overflow: hidden;
+}
+.action-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-strip-gradient, var(--gradient-primary));
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+.action-card:hover::after {
+  opacity: 1;
+}
+
+/* Gradient border hero variant (used sparingly) */
+.gradient-border {
+  position: relative;
+  background: var(--bg-surface);
+  border-radius: var(--radius-2xl);
+  isolation: isolate;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(6, 182, 212, 0.35));
+  z-index: -1;
+  pointer-events: none;
 }

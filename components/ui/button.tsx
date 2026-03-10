@@ -9,25 +9,25 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Primary CTA — Apple blue pill
+        // Primary CTA — gradient with shine sweep (bg set via .btn-primary-shine CSS class)
         primary:
-          "bg-[--accent] text-white hover:bg-[--accent-hover] rounded-[var(--radius-pill)]",
-        // Secondary — outlined, ghost
+          "btn-primary-shine rounded-[var(--radius-pill)] shadow-[0_2px_12px_rgba(99,102,241,0.30)] hover:shadow-[0_4px_20px_rgba(99,102,241,0.45)] hover:-translate-y-[1px]",
+        // Secondary — subtle background
         secondary:
-          "bg-transparent text-[--accent] border border-[--border-medium] hover:bg-[rgba(0,0,0,0.04)] rounded-[var(--radius-pill)]",
+          "bg-[--bg-subtle] text-[--text-primary] border border-[--border-default] hover:bg-[--bg-hover] rounded-[var(--radius-pill)]",
         // Ghost — icon buttons, toolbar actions
         ghost:
-          "text-[--text-secondary] hover:text-[--text-primary] hover:bg-[rgba(0,0,0,0.04)] rounded-[var(--radius-sm)]",
+          "text-[--text-secondary] hover:text-[--text-primary] hover:bg-[--bg-subtle] rounded-[var(--radius-sm)]",
         // Destructive
         destructive:
-          "bg-[var(--color-error-bg)] text-[--status-error] border border-[rgba(255,59,48,0.20)] hover:bg-[rgba(255,59,48,0.18)] rounded-[var(--radius-pill)]",
+          "bg-[rgba(255,59,48,0.08)] text-[--status-error] border border-[rgba(255,59,48,0.20)] hover:bg-[rgba(255,59,48,0.14)] rounded-[var(--radius-pill)]",
         // Text link
         link: "text-[--accent] underline-offset-4 hover:underline p-0 h-auto rounded-none",
       },
       size: {
-        sm:   "h-8 px-4 text-[13px] rounded-[var(--radius-pill)]",
-        md:   "h-[44px] px-6 text-[15px] rounded-[var(--radius-pill)]",
-        lg:   "h-[50px] px-8 text-[17px] rounded-[var(--radius-pill)]",
+        sm:   "h-8 px-4 text-[13px]",
+        md:   "h-[44px] px-6 text-[15px]",
+        lg:   "h-[50px] px-8 text-[17px]",
         icon: "h-9 w-9 rounded-[var(--radius-sm)]",
       },
     },
