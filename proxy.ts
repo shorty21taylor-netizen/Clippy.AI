@@ -3,16 +3,17 @@ import { NextResponse } from "next/server";
 
 // Routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
+  "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/f/(.*)", // Public funnel pages
-  "/api/webhooks/(.*)",
   "/api/health",
+  "/api/webhooks/(.*)",
+  "/f/(.*)", // Public funnel pages
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+export default clerkMiddleware((auth, req) => {
   if (!isPublicRoute(req)) {
-    await auth.protect();
+    auth.protect();
   }
 
   return NextResponse.next();
