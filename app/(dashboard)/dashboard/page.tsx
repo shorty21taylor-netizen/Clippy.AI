@@ -1,3 +1,5 @@
+"use client";
+
 import { Topbar } from "@/components/layout/topbar";
 import { Users, FileText, Megaphone, TrendingUp, ArrowRight, Wand2, Funnel } from "lucide-react";
 
