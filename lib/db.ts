@@ -10,7 +10,15 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  const adapter = new PrismaPg({ connectionString });
+  // Railway (and most cloud Postgres providers) require SSL.
+  // Pass ssl: { rejectUnauthorized: false } so the connection works without
+  // needing a trusted certificate chain.
+  const adapter = new PrismaPg({
+    connectionString,
+    ...(process.env.NODE_ENV === "production" && {
+      ssl: { rejectUnauthorized: false },
+    }),
+  });
 
   return new PrismaClient({
     adapter,
