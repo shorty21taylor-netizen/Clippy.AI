@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/f/(.*)", // Public funnel pages
   "/api/webhooks/(.*)",
+  "/api/health",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
