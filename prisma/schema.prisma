@@ -57,6 +57,7 @@ model Workspace {
   funnels        Funnel[]
   leads          Lead[]
   publishLogs    PublishLog[]
+  clipDetections ClipDetection[]
 }
 
 model User {
@@ -161,6 +162,26 @@ model PublishLog {
   @@index([workspaceId])
   @@index([workspaceId, status])
   @@index([socialAccountId])
+}
+
+// ─── Clip Detection ───────────────────────────────────────────────────────────
+
+model ClipDetection {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  videoTitle     String?
+  channelName    String?
+  niche          String?
+  targetAudience String?
+  videoSummary   String?
+  totalDuration  Int?     // seconds
+  clipsJson      Json     @default("[]") // full detected clips array
+  clipsCount     Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 // ─── Funnels & Leads ─────────────────────────────────────────────────────────
