@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { Sidebar } from "@/components/layout/sidebar";
+import { WorkspaceProvider } from "@/lib/workspace-context";
 
 export default async function DashboardLayout({
   children,
@@ -22,11 +23,13 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[--bg-base]">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {children}
+    <WorkspaceProvider>
+      <div className="flex h-screen overflow-hidden bg-[--bg-base]">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {children}
+        </div>
       </div>
-    </div>
+    </WorkspaceProvider>
   );
 }
