@@ -26,8 +26,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
-}
+// Lazy proxy — createPrismaClient() is only called on first actual DB access,
+// not at module import time. This allows Next.js to build without DATABASE_URL.
+export const db = new Proxy({} as ReturnType<typeof createPrismaClient>, {
+  get(_, prop) {
+    if (!globalForPrisma.prisma) {
+      globalForPrisma.prisma = createPrismaClient();
+    }
+    return (globalForPrisma.prisma as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
