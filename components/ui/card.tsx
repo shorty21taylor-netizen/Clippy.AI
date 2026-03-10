@@ -1,6 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/* Shadow-only cards — no visible border. White surface on grey page creates
+   natural depth contrast per Apple's design language. */
+
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -8,8 +11,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-[var(--radius-xl)] bg-[--bg-card] border border-[--border-subtle]",
-      "shadow-[var(--shadow-card)]",
+      "rounded-[var(--radius-lg)] bg-[--bg-surface] shadow-[var(--shadow-card)]",
       className
     )}
     {...props}
@@ -50,7 +52,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-[15px] text-[--text-secondary] leading-relaxed", className)}
+    className={cn("text-[14px] text-[--text-secondary] leading-[1.55]", className)}
     {...props}
   />
 ));
