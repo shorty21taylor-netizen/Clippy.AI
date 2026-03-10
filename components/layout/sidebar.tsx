@@ -22,36 +22,12 @@ import { cn } from "@/lib/utils";
 import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
 
 const NAV_ITEMS = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Social Accounts",
-    href: "/dashboard/social-accounts",
-    icon: Users,
-  },
-  {
-    label: "Content Studio",
-    href: "/dashboard/content",
-    icon: Wand2,
-  },
-  {
-    label: "Publisher",
-    href: "/dashboard/publish",
-    icon: CalendarClock,
-  },
-  {
-    label: "Funnels",
-    href: "/dashboard/funnels",
-    icon: Funnel,
-  },
-  {
-    label: "Analytics",
-    href: "/dashboard/analytics",
-    icon: BarChart3,
-  },
+  { label: "Dashboard",       href: "/dashboard",                icon: LayoutDashboard },
+  { label: "Social Accounts", href: "/dashboard/social-accounts", icon: Users },
+  { label: "Content Studio",  href: "/dashboard/content",         icon: Wand2 },
+  { label: "Publisher",       href: "/dashboard/publish",         icon: CalendarClock },
+  { label: "Funnels",         href: "/dashboard/funnels",         icon: Funnel },
+  { label: "Analytics",       href: "/dashboard/analytics",       icon: BarChart3 },
 ];
 
 export function Sidebar() {
@@ -61,15 +37,15 @@ export function Sidebar() {
 
   return (
     <motion.aside
-      animate={{ width: expanded ? 220 : 64 }}
+      animate={{ width: expanded ? 240 : 64 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
       className="relative flex h-screen flex-col border-r border-[--border-subtle] bg-[--bg-card] overflow-hidden shrink-0"
     >
       {/* Logo / Brand */}
-      <div className="flex h-14 items-center border-b border-[--border-subtle] px-4 shrink-0">
+      <div className="flex h-12 items-center border-b border-[--border-subtle] px-4 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="h-7 w-7 rounded-[8px] bg-[--accent] flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">C</span>
+            <span className="text-white font-bold text-xs tracking-tight">C</span>
           </div>
           <AnimatePresence>
             {expanded && (
@@ -104,12 +80,11 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-[--radius-md] px-3 py-2.5 mb-0.5",
-                "text-sm font-medium transition-all duration-150",
-                "hover:bg-[rgba(255,255,255,0.04)]",
+                "flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 mb-0.5",
+                "text-[15px] font-medium transition-all duration-150",
                 isActive
                   ? "bg-[--accent-muted] text-[--accent]"
-                  : "text-[--text-secondary] hover:text-[--text-primary]"
+                  : "text-[--text-secondary] hover:text-[--text-primary] hover:bg-[rgba(0,0,0,0.05)]"
               )}
             >
               <item.icon
@@ -135,7 +110,7 @@ export function Sidebar() {
               {isActive && expanded && (
                 <ChevronRight
                   size={14}
-                  className="ml-auto text-[--accent] opacity-60"
+                  className="ml-auto text-[--accent] opacity-50"
                 />
               )}
             </Link>
@@ -147,7 +122,7 @@ export function Sidebar() {
       <div className="border-t border-[--border-subtle] px-2 py-3 space-y-0.5">
         <Link
           href="/dashboard/settings"
-          className="flex items-center gap-3 rounded-[--radius-md] px-3 py-2.5 text-sm font-medium text-[--text-secondary] hover:text-[--text-primary] hover:bg-[rgba(255,255,255,0.04)] transition-all duration-150"
+          className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[15px] font-medium text-[--text-secondary] hover:text-[--text-primary] hover:bg-[rgba(0,0,0,0.05)] transition-all duration-150"
         >
           <Settings size={18} className="text-[--text-tertiary] shrink-0" />
           <AnimatePresence>
@@ -166,7 +141,7 @@ export function Sidebar() {
 
         <button
           onClick={() => signOut({ redirectUrl: "/sign-in" })}
-          className="w-full flex items-center gap-3 rounded-[--radius-md] px-3 py-2.5 text-sm font-medium text-[--text-secondary] hover:text-[--status-error] hover:bg-[--status-error-muted] transition-all duration-150"
+          className="w-full flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[15px] font-medium text-[--text-secondary] hover:text-[--status-error] hover:bg-[--status-error-muted] transition-all duration-150"
         >
           <LogOut size={18} className="shrink-0" />
           <AnimatePresence>
@@ -186,7 +161,7 @@ export function Sidebar() {
         {/* Collapse toggle */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center gap-3 rounded-[--radius-md] px-3 py-2.5 text-[--text-tertiary] hover:text-[--text-secondary] hover:bg-[rgba(255,255,255,0.04)] transition-all duration-150"
+          className="w-full flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[--text-tertiary] hover:text-[--text-secondary] hover:bg-[rgba(0,0,0,0.05)] transition-all duration-150"
         >
           {expanded ? (
             <ChevronsLeft size={16} className="shrink-0" />

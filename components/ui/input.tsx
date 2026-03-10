@@ -16,7 +16,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-xs font-medium text-[--text-secondary] uppercase tracking-wide"
+            className="text-[14px] font-medium text-[--text-secondary] block"
           >
             {label}
           </label>
@@ -26,18 +26,20 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           type={type}
           ref={ref}
           className={cn(
-            "h-10 w-full rounded-[--radius-md] bg-[--bg-input] px-3.5 text-sm text-[--text-primary]",
-            "border border-[--border-subtle] transition-colors duration-150",
+            "h-[52px] w-full rounded-[var(--radius-md)] bg-[--bg-input] px-[18px]",
+            "text-[17px] text-[--text-primary]",
+            "border border-[--border-subtle] transition-all duration-200",
             "placeholder:text-[--text-placeholder]",
             "focus:outline-none focus:border-[--accent]",
+            "focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]",
             "disabled:opacity-40 disabled:cursor-not-allowed",
-            error && "border-[--status-error]",
+            error && "border-[--status-error] focus:shadow-[0_0_0_4px_rgba(255,59,48,0.12)]",
             className
           )}
           {...props}
         />
         {error && (
-          <p className="text-xs text-[--status-error]">{error}</p>
+          <p className="text-[13px] text-[--status-error]">{error}</p>
         )}
       </div>
     );

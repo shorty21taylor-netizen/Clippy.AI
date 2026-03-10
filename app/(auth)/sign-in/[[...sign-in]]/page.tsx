@@ -2,19 +2,19 @@ import { SignIn } from "@clerk/nextjs";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-[--bg-base] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[--bg-base] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <div className="h-9 w-9 rounded-[12px] bg-[--accent] flex items-center justify-center">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2.5 mb-4">
+            <div className="h-9 w-9 rounded-[12px] bg-[--accent] flex items-center justify-center shadow-[0_4px_12px_rgba(0,113,227,0.30)]">
               <span className="text-white font-bold">C</span>
             </div>
-            <span className="font-bold text-xl text-[--text-primary] tracking-[-0.02em]">
+            <span className="font-semibold text-xl text-[--text-primary] tracking-[-0.025em]">
               Clippy.AI
             </span>
           </div>
-          <p className="text-[--text-secondary] text-sm">
+          <p className="text-[--text-secondary] text-[15px]">
             Sign in to your workspace
           </p>
         </div>
@@ -23,18 +23,21 @@ export default function SignInPage() {
           appearance={{
             elements: {
               rootBox: "w-full",
-              card: "bg-[#141416] border border-[rgba(255,255,255,0.06)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-[20px]",
-              headerTitle: "text-[--text-primary] font-semibold",
+              card: "bg-[--bg-card] border border-[--border-subtle] shadow-[var(--shadow-card)] rounded-[24px]",
+              headerTitle: "text-[--text-primary] font-semibold tracking-[-0.02em]",
               headerSubtitle: "text-[--text-secondary]",
               socialButtonsBlockButton:
-                "bg-[#1a1a1c] border border-[rgba(255,255,255,0.1)] text-[--text-primary] hover:bg-[#1f1f22] rounded-[12px]",
+                "bg-[--bg-input] border border-[--border-subtle] text-[--text-primary] hover:bg-[rgba(0,0,0,0.04)] rounded-[12px] transition-colors",
               formFieldInput:
-                "bg-[#1c1c1e] border-[rgba(255,255,255,0.06)] text-[--text-primary] rounded-[12px]",
+                "bg-[--bg-input] border-[--border-subtle] text-[--text-primary] rounded-[12px] focus:border-[--accent]",
+              formFieldLabel: "text-[--text-secondary] font-medium",
               formButtonPrimary:
-                "bg-[#3b82f6] hover:bg-[#2563eb] rounded-[12px] font-medium",
-              footerActionLink: "text-[#3b82f6]",
-              dividerLine: "bg-[rgba(255,255,255,0.06)]",
+                "bg-[--accent] hover:bg-[--accent-hover] rounded-[var(--radius-pill)] font-medium transition-colors",
+              footerActionLink: "text-[--accent] hover:text-[--accent-hover]",
+              dividerLine: "bg-[--border-subtle]",
               dividerText: "text-[--text-tertiary]",
+              identityPreviewText: "text-[--text-primary]",
+              identityPreviewEditButtonIcon: "text-[--accent]",
             },
           }}
         />
