@@ -1,6 +1,11 @@
 FROM node:20.19.0-alpine
 WORKDIR /app
 
+# Install ffmpeg, python3, and yt-dlp for video processing
+RUN apk add --no-cache ffmpeg python3 py3-pip \
+    && pip3 install --break-system-packages yt-dlp \
+    && rm -rf /root/.cache
+
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 

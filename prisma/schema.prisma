@@ -41,6 +41,49 @@ enum PostStatus {
   FAILED
 }
 
+// New enums for the clipping engine
+
+enum SourceType {
+  YOUTUBE_URL
+  FILE_UPLOAD
+}
+
+enum IngestionStatus {
+  PENDING
+  TRANSCRIBING
+  TRANSCRIBED
+  ANALYZING
+  ANALYZED
+  GENERATING
+  COMPLETE
+  ERROR
+}
+
+enum ClipType {
+  HOT_TAKE
+  EMOTIONAL
+  QUOTABLE
+  STORY
+  REVEAL
+  RELATABLE
+}
+
+enum ClipStatus {
+  GENERATED
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  REJECTED
+}
+
+enum PublishStatus {
+  QUEUED
+  UPLOADING
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
+
 // ─── Core Models ─────────────────────────────────────────────────────────────
 
 model Workspace {
@@ -58,6 +101,7 @@ model Workspace {
   leads          Lead[]
   publishLogs    PublishLog[]
   clipDetections ClipDetection[]
+  sourceVideos   SourceVideo[]
 }
 
 model User {
@@ -90,42 +134,48 @@ model WorkspaceMember {
 // ─── Social Accounts ─────────────────────────────────────────────────────────
 
 model SocialAccount {
-  id            String              @id @default(cuid())
-  workspaceId   String
-  platform      Platform
-  username      String
-  displayName   String?
-  avatarUrl     String?
-  accessToken   String? // AES-256 encrypted
-  refreshToken  String? // AES-256 encrypted
-  status        SocialAccountStatus @default(PENDING)
-  followerCount Int?
-  tags          String[]            @default([])
-  proxyConfig   String? // JSON string for proxy settings
-  lastPostedAt  DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id                String              @id @default(cuid())
+  workspaceId       String
+  platform          Platform
+  username          String
+  displayName       String?
+  avatarUrl         String?
+  accessToken       String?             // AES-256 encrypted
+  refreshToken      String?             // AES-256 encrypted
+  tokenExpiresAt    DateTime?
+  platformAccountId String?             // Platform's user/account ID
+  scopes            String[]            @default([])
+  status            SocialAccountStatus @default(PENDING)
+  followerCount     Int?
+  tags              String[]            @default([])
+  proxyConfig       String?             // JSON string for proxy settings
+  isActive          Boolean             @default(true)
+  lastPostedAt      DateTime?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   publishLogs PublishLog[]
+  analytics   Analytics[]
 
   @@index([workspaceId])
   @@index([workspaceId, platform])
 }
 
-// ─── Content ─────────────────────────────────────────────────────────────────
+// ─── Content (existing Content Studio) ───────────────────────────────────────
 
 model ContentPiece {
   id            String        @id @default(cuid())
   workspaceId   String
   title         String?
-  rawInput      String // Text script or S3 URL for video
+  rawInput      String        // Text script or S3 URL for video
   platform      Platform
   hook          String?
   caption       String?
   hashtags      String[]      @default([])
   cta           String?
-  scriptShort   String? // Trimmed script variant
+  scriptShort   String?       // Trimmed script variant
   youtubeTitle  String?
   thumbnailText String?
   status        ContentStatus @default(DRAFT)
@@ -140,31 +190,120 @@ model ContentPiece {
   @@index([workspaceId, status])
 }
 
+// ─── Source Videos (long-form ingestion) ─────────────────────────────────────
+
+model SourceVideo {
+  id             String          @id @default(cuid())
+  workspaceId    String
+  title          String
+  sourceType     SourceType
+  sourceUrl      String?         // YouTube URL
+  sourceFilePath String?         // S3/storage path
+  duration       Int?            // total seconds
+  transcript     String?         @db.Text
+  clipAnalysis   Json?           // Claude's raw JSON response
+  status         IngestionStatus @default(PENDING)
+  errorMessage   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clips     Clip[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+// ─── Clips (short-form clips from source videos) ────────────────────────────
+
+model Clip {
+  id                String     @id @default(cuid())
+  sourceVideoId     String
+  title             String
+  startTime         String     // "MM:SS"
+  endTime           String     // "MM:SS"
+  duration          Int        // seconds
+  viralityScore     Int        // 1-10
+  clipType          ClipType
+  hook              String?
+  suggestedCaption  String?
+  suggestedHashtags String[]   @default([])
+  viralityReason    String?
+  transcriptExcerpt String?
+  videoPath         String?    // path to generated clip file
+  thumbnailPath     String?
+  srtPath           String?    // subtitle file
+  status            ClipStatus @default(GENERATED)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  sourceVideo SourceVideo  @relation(fields: [sourceVideoId], references: [id], onDelete: Cascade)
+  publishLogs PublishLog[]
+
+  @@index([sourceVideoId])
+  @@index([sourceVideoId, viralityScore(sort: Desc)])
+}
+
 // ─── Publishing ──────────────────────────────────────────────────────────────
 
 model PublishLog {
-  id              String     @id @default(cuid())
+  id              String        @id @default(cuid())
   workspaceId     String
-  contentPieceId  String
+  contentPieceId  String?
+  clipId          String?
   socialAccountId String
-  status          PostStatus @default(PENDING)
+  platform        Platform?
+  status          PostStatus    @default(PENDING)
+  publishStatus   PublishStatus @default(QUEUED)
+  caption         String?
+  hashtags        String[]      @default([])
   scheduledAt     DateTime?
   executedAt      DateTime?
+  publishedAt     DateTime?
   errorMessage    String?
-  platformPostId  String? // ID returned by the platform after posting
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  platformPostId  String?       // ID returned by the platform after posting
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  contentPiece  ContentPiece  @relation(fields: [contentPieceId], references: [id], onDelete: Cascade)
-  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contentPiece  ContentPiece?  @relation(fields: [contentPieceId], references: [id], onDelete: Cascade)
+  clip          Clip?          @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  socialAccount SocialAccount  @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  analytics     Analytics[]
 
   @@index([workspaceId])
   @@index([workspaceId, status])
   @@index([socialAccountId])
+  @@index([clipId])
 }
 
-// ─── Clip Detection ───────────────────────────────────────────────────────────
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+model Analytics {
+  id              String   @id @default(cuid())
+  publishLogId    String
+  socialAccountId String
+  views           Int      @default(0)
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  shares          Int      @default(0)
+  saves           Int      @default(0)
+  reach           Int      @default(0)
+  impressions     Int      @default(0)
+  engagementRate  Float    @default(0)
+  fetchedAt       DateTime @default(now())
+  rawData         Json?
+  createdAt       DateTime @default(now())
+
+  publishLog    PublishLog    @relation(fields: [publishLogId], references: [id], onDelete: Cascade)
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+
+  @@index([publishLogId])
+  @@index([socialAccountId])
+  @@index([fetchedAt])
+}
+
+// ─── Clip Detection (standalone transcript analysis) ─────────────────────────
 
 model ClipDetection {
   id             String   @id @default(cuid())
