@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
 // Prisma v7: uses the "client" engine which requires a database adapter.
-// We use @prisma/adapter-pg for direct PostgreSQL connections.
+// We use @prisma/adapter-pg with an explicit pg.Pool for full SSL control.
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
@@ -10,15 +11,17 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  // Railway (and most cloud Postgres providers) require SSL.
-  // Pass ssl: { rejectUnauthorized: false } so the connection works without
-  // needing a trusted certificate chain.
-  const adapter = new PrismaPg({
+  // Use a pg.Pool directly so SSL config is applied reliably.
+  // Railway's public Postgres endpoint requires SSL; rejectUnauthorized:false
+  // accepts self-signed certs used by managed providers.
+  const pool = new Pool({
     connectionString,
-    ...(process.env.NODE_ENV === "production" && {
-      ssl: { rejectUnauthorized: false },
-    }),
+    ssl: connectionString.includes("localhost")
+      ? false
+      : { rejectUnauthorized: false },
   });
+
+  const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
     adapter,
