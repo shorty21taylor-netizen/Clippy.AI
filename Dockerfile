@@ -27,4 +27,5 @@ ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 RUN npm run build
 
 EXPOSE 3000
-CMD ["npm", "start"]
+# Run DB migrations then start the server
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
