@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Platform {
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+}
+
+enum SocialAccountStatus {
+  ACTIVE
+  BANNED
+  PENDING
+  DISCONNECTED
+}
+
+enum ContentStatus {
+  DRAFT
+  APPROVED
+  SCHEDULED
+  POSTED
+}
+
+enum PostStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+}
+
+// ─── Core Models ─────────────────────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      String   @default("free")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members        WorkspaceMember[]
+  socialAccounts SocialAccount[]
+  content        ContentPiece[]
+  funnels        Funnel[]
+  leads          Lead[]
+  publishLogs    PublishLog[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaces WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+// ─── Social Accounts ─────────────────────────────────────────────────────────
+
+model SocialAccount {
+  id            String              @id @default(cuid())
+  workspaceId   String
+  platform      Platform
+  username      String
+  displayName   String?
+  avatarUrl     String?
+  accessToken   String? // AES-256 encrypted
+  refreshToken  String? // AES-256 encrypted
+  status        SocialAccountStatus @default(PENDING)
+  followerCount Int?
+  tags          String[]            @default([])
+  proxyConfig   String? // JSON string for proxy settings
+  lastPostedAt  DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  publishLogs PublishLog[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, platform])
+}
+
+// ─── Content ─────────────────────────────────────────────────────────────────
+
+model ContentPiece {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  title         String?
+  rawInput      String // Text script or S3 URL for video
+  platform      Platform
+  hook          String?
+  caption       String?
+  hashtags      String[]      @default([])
+  cta           String?
+  scriptShort   String? // Trimmed script variant
+  youtubeTitle  String?
+  thumbnailText String?
+  status        ContentStatus @default(DRAFT)
+  scheduledAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  publishLogs PublishLog[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
+// ─── Publishing ──────────────────────────────────────────────────────────────
+
+model PublishLog {
+  id              String     @id @default(cuid())
+  workspaceId     String
+  contentPieceId  String
+  socialAccountId String
+  status          PostStatus @default(PENDING)
+  scheduledAt     DateTime?
+  executedAt      DateTime?
+  errorMessage    String?
+  platformPostId  String? // ID returned by the platform after posting
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contentPiece  ContentPiece  @relation(fields: [contentPieceId], references: [id], onDelete: Cascade)
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([socialAccountId])
+}
+
+// ─── Funnels & Leads ─────────────────────────────────────────────────────────
+
+model Funnel {
+  id          String    @id @default(cuid())
+  workspaceId String
+  slug        String    @unique
+  title       String
+  blocks      Json      @default("[]")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads     Lead[]
+
+  @@index([workspaceId])
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  workspaceId String
+  funnelId    String
+  name        String?
+  email       String?
+  phone       String?
+  submittedAt DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  funnel    Funnel    @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([funnelId])
+}
