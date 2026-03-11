@@ -84,6 +84,14 @@ enum PublishStatus {
   FAILED
 }
 
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
 // ─── Core Models ─────────────────────────────────────────────────────────────
 
 model Workspace {
@@ -342,17 +350,47 @@ model Funnel {
 }
 
 model Lead {
-  id          String   @id @default(cuid())
-  workspaceId String
-  funnelId    String
-  name        String?
-  email       String?
-  phone       String?
-  submittedAt DateTime @default(now())
+  id             String     @id @default(cuid())
+  workspaceId    String
+  funnelId       String
+  name           String?
+  email          String?
+  phone          String?
+  status         LeadStatus @default(NEW)
+  tags           String[]   @default([])
+  notes          String?
+  notesUpdatedAt DateTime?
+  customFields   Json?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  referrer       String?
+  ipAddress      String?
+  userAgent      String?
+  pageUrl        String?
+  submittedAt    DateTime   @default(now())
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  funnel    Funnel    @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  funnel    Funnel     @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  events    LeadEvent[]
 
   @@index([workspaceId])
   @@index([funnelId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, submittedAt(sort: Desc)])
+}
+
+model LeadEvent {
+  id          String   @id @default(cuid())
+  leadId      String
+  type        String   // "created" | "status_changed" | "note_added" | "tag_added"
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
 }
