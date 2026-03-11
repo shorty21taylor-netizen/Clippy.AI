@@ -1,5 +1,101 @@
 // Shared funnel block types — used by the builder, public renderer, and API
 
+// ─── Advanced Styling Types ───────────────────────────────────────────────────
+
+export interface GradientStop {
+  color: string;
+  position: number; // 0–100
+}
+
+export interface GradientConfig {
+  type: "linear" | "radial" | "conic";
+  angle?: number; // degrees (for linear)
+  stops: GradientStop[];
+}
+
+export type BackgroundType = "none" | "solid" | "gradient" | "image";
+
+export interface BackgroundConfig {
+  type: BackgroundType;
+  color?: string;
+  gradient?: GradientConfig;
+  image?: {
+    url: string;
+    size: "cover" | "contain" | "auto";
+    position: string;
+    repeat: "no-repeat" | "repeat" | "repeat-x" | "repeat-y";
+    fixed: boolean;
+  };
+  overlay?: {
+    color: string;
+    opacity: number; // 0–1
+  };
+}
+
+export interface BorderConfig {
+  width: number;
+  style: "solid" | "dashed" | "dotted";
+  color: string;
+  radiusUniform?: number;
+  radiusTL?: number;
+  radiusTR?: number;
+  radiusBR?: number;
+  radiusBL?: number;
+}
+
+export interface ShadowConfig {
+  x: number;
+  y: number;
+  blur: number;
+  spread: number;
+  color: string;
+  inset: boolean;
+}
+
+export interface TextStyleConfig {
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  color?: string;
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  textDecoration?: "none" | "underline" | "line-through";
+  textShadow?: { x: number; y: number; blur: number; color: string };
+  gradientText?: GradientConfig;
+}
+
+export type AnimationType =
+  | "none"
+  | "fade-in"
+  | "fade-in-up"
+  | "fade-in-down"
+  | "fade-in-left"
+  | "fade-in-right"
+  | "slide-in-up"
+  | "zoom-in"
+  | "bounce-in";
+
+export interface AnimationConfig {
+  type: AnimationType;
+  duration: number; // ms
+  delay: number;    // ms
+  easing: "ease" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+export interface ElementStyles {
+  background?: BackgroundConfig;
+  border?: BorderConfig;
+  shadows?: ShadowConfig[];
+  opacity?: number;
+  rotation?: number;
+  padding?: { top: number; right: number; bottom: number; left: number };
+  text?: TextStyleConfig;
+  animation?: AnimationConfig;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type BlockType =
   | "hero"
   | "text"
@@ -16,6 +112,10 @@ export interface Block {
   id: string;
   type: BlockType;
   data: Record<string, unknown>;
+  styles?: ElementStyles;
+  name?: string;
+  locked?: boolean;
+  hidden?: boolean;
 }
 
 // ─── Block data shapes ────────────────────────────────────────────────────────

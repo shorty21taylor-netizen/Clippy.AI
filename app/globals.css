@@ -406,6 +406,74 @@ body {
 .builder-element-enter { animation: builder-element-in 150ms ease-out forwards; }
 .builder-drop-zone { animation: drop-zone-pulse 1.2s ease infinite; }
 
+/* ─── Public page entrance animations (triggered by IntersectionObserver) ─── */
+@keyframes animate-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes animate-fade-in-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes animate-fade-in-down {
+  from { opacity: 0; transform: translateY(-32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes animate-fade-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes animate-fade-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes animate-slide-in-up {
+  from { opacity: 0; transform: translateY(60px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes animate-zoom-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes animate-bounce-in {
+  0%   { opacity: 0; transform: scale(0.70); }
+  60%  { opacity: 1; transform: scale(1.05); }
+  80%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+/* Animate target: hidden initially, revealed by IntersectionObserver adding .is-visible */
+.animate-target {
+  opacity: 0;
+}
+.animate-target.is-visible {
+  opacity: 1;
+}
+.animate-target[data-animate="fade-in"].is-visible {
+  animation: animate-fade-in var(--animate-duration, 600ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="fade-in-up"].is-visible {
+  animation: animate-fade-in-up var(--animate-duration, 600ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="fade-in-down"].is-visible {
+  animation: animate-fade-in-down var(--animate-duration, 600ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="fade-in-left"].is-visible {
+  animation: animate-fade-in-left var(--animate-duration, 600ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="fade-in-right"].is-visible {
+  animation: animate-fade-in-right var(--animate-duration, 600ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="slide-in-up"].is-visible {
+  animation: animate-slide-in-up var(--animate-duration, 700ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="zoom-in"].is-visible {
+  animation: animate-zoom-in var(--animate-duration, 500ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+.animate-target[data-animate="bounce-in"].is-visible {
+  animation: animate-bounce-in var(--animate-duration, 700ms) var(--animate-easing, ease-out) var(--animate-delay, 0ms) both;
+}
+
 /* Gradient border hero variant (used sparingly) */
 .gradient-border {
   position: relative;

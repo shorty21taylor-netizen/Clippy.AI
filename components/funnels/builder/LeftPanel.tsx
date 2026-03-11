@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import {
   Target,
-  Type,
   AlignLeft,
   ImageIcon,
   Play,
@@ -14,8 +13,10 @@ import {
   Minus,
   ArrowUpDown,
   GripVertical,
+  Layers,
 } from "lucide-react";
 import { useBuilder } from "./context";
+import { LayersPanel } from "./LayersPanel";
 import type { BlockType } from "@/types/funnel";
 
 interface ElementItem {
@@ -163,6 +164,8 @@ function GroupSection({
 }
 
 export function LeftPanel() {
+  const [activeTab, setActiveTab] = useState<"elements" | "layers">("elements");
+
   return (
     <aside
       style={{
@@ -176,53 +179,84 @@ export function LeftPanel() {
         fontFamily: "'Inter', sans-serif",
       }}
     >
-      {/* Panel header */}
+      {/* Tab header */}
       <div
         style={{
-          padding: "12px 16px 10px",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           flexShrink: 0,
+          display: "flex",
+          padding: "0 8px",
         }}
       >
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            color: "#71717a",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}
-        >
-          Elements
-        </span>
+        {(["elements", "layers"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              flex: 1,
+              height: "40px",
+              background: "none",
+              border: "none",
+              borderBottom: `2px solid ${activeTab === tab ? "#3b82f6" : "transparent"}`,
+              color: activeTab === tab ? "#60a5fa" : "#52525b",
+              fontSize: "11px",
+              fontWeight: activeTab === tab ? 600 : 400,
+              cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "5px",
+              transition: "color 150ms, border-color 150ms",
+            }}
+          >
+            {tab === "layers" ? <Layers size={11} /> : null}
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {/* Element groups */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "8px 4px",
-        }}
-      >
-        {GROUPS.map((group) => {
-          const items = ELEMENTS.filter((e) => e.group === group);
-          return <GroupSection key={group} group={group} items={items} />;
-        })}
-      </div>
-
-      {/* Footer tip */}
-      <div
-        style={{
-          padding: "12px 16px",
-          borderTop: "1px solid rgba(255,255,255,0.04)",
-          fontSize: "11px",
-          color: "#52525b",
-          lineHeight: 1.5,
-        }}
-      >
-        Click an element to add it to the canvas
-      </div>
+      {activeTab === "elements" ? (
+        <>
+          {/* Element groups */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 4px" }}>
+            {GROUPS.map((group) => {
+              const items = ELEMENTS.filter((e) => e.group === group);
+              return <GroupSection key={group} group={group} items={items} />;
+            })}
+          </div>
+          {/* Footer tip */}
+          <div
+            style={{
+              padding: "12px 16px",
+              borderTop: "1px solid rgba(255,255,255,0.04)",
+              fontSize: "11px",
+              color: "#52525b",
+              lineHeight: 1.5,
+            }}
+          >
+            Click an element to add it to the canvas
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Layers panel header */}
+          <div
+            style={{
+              padding: "8px 12px 6px",
+              borderBottom: "1px solid rgba(255,255,255,0.04)",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: "10px", color: "#52525b", fontFamily: "'Inter', sans-serif" }}>
+              Double-click to rename · drag to reorder
+            </span>
+          </div>
+          <LayersPanel />
+        </>
+      )}
     </aside>
   );
 }

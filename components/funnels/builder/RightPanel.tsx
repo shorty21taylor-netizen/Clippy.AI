@@ -9,6 +9,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useBuilder } from "./context";
+import { StyleEditor } from "./StyleEditor";
 import { BLOCK_LABELS } from "@/types/funnel";
 import type {
   Block,
@@ -22,6 +23,7 @@ import type {
   TestimonialData,
   DividerData,
   SpacerData,
+  ElementStyles,
 } from "@/types/funnel";
 
 // ─── Shared styled input components ──────────────────────────────────────────
@@ -713,7 +715,8 @@ function SpacerEditor({ data, onChange }: { data: SpacerData; onChange: (d: Part
 // ─── Block inspector router ───────────────────────────────────────────────────
 
 function BlockInspector({ block }: { block: Block }) {
-  const { updateBlock, selectBlock } = useBuilder();
+  const { updateBlock, updateBlockStyles, selectBlock } = useBuilder();
+  const [activeTab, setActiveTab] = useState<"content" | "style">("content");
 
   const onChange = useCallback(
     (partial: Record<string, unknown>) => {
@@ -722,17 +725,21 @@ function BlockInspector({ block }: { block: Block }) {
     [block, updateBlock]
   );
 
+  const onStyleChange = useCallback(
+    (patch: Partial<ElementStyles>) => {
+      updateBlockStyles(block.id, { ...block.styles, ...patch });
+    },
+    [block, updateBlockStyles]
+  );
+
   const d = block.data as Record<string, unknown>;
 
   return (
-    <div style={{ flex: 1, overflowY: "auto" }}>
+    <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 16px",
+          flexShrink: 0,
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           position: "sticky",
           top: 0,
@@ -740,98 +747,104 @@ function BlockInspector({ block }: { block: Block }) {
           zIndex: 5,
         }}
       >
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "#fafafa", fontFamily: "'Inter', sans-serif" }}>
-          {BLOCK_LABELS[block.type]}
-        </span>
-        <button
-          onClick={() => selectBlock(null)}
-          aria-label="Deselect"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "#71717a",
-            display: "flex",
-            alignItems: "center",
-            padding: "4px",
-            borderRadius: "5px",
-            transition: "background 150ms, color 150ms",
-          }}
-          onMouseEnter={(e) => {
-            const el = e.currentTarget as HTMLButtonElement;
-            el.style.background = "rgba(255,255,255,0.06)";
-            el.style.color = "#fafafa";
-          }}
-          onMouseLeave={(e) => {
-            const el = e.currentTarget as HTMLButtonElement;
-            el.style.background = "none";
-            el.style.color = "#71717a";
-          }}
-        >
-          <X size={14} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 0" }}>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "#fafafa", fontFamily: "'Inter', sans-serif" }}>
+            {BLOCK_LABELS[block.type]}
+          </span>
+          <button
+            onClick={() => selectBlock(null)}
+            aria-label="Deselect"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#71717a",
+              display: "flex",
+              alignItems: "center",
+              padding: "4px",
+              borderRadius: "5px",
+              transition: "background 150ms, color 150ms",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.background = "rgba(255,255,255,0.06)";
+              el.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.background = "none";
+              el.style.color = "#71717a";
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Content / Style tabs */}
+        <div style={{ display: "flex", padding: "6px 16px 0", gap: "2px" }}>
+          {(["content", "style"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1,
+                height: "30px",
+                background: "none",
+                border: "none",
+                borderBottom: `2px solid ${activeTab === tab ? "#3b82f6" : "transparent"}`,
+                color: activeTab === tab ? "#60a5fa" : "#71717a",
+                fontSize: "12px",
+                fontWeight: activeTab === tab ? 600 : 400,
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                textTransform: "capitalize",
+                transition: "color 150ms, border-color 150ms",
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Block-specific editor */}
-      {block.type === "hero" && (
-        <HeroEditor
-          data={d as unknown as HeroData}
-          onChange={onChange as (d: Partial<HeroData>) => void}
-        />
-      )}
-      {block.type === "text" && (
-        <TextEditor
-          data={d as unknown as TextData}
-          onChange={onChange as (d: Partial<TextData>) => void}
-        />
-      )}
-      {block.type === "image" && (
-        <ImageEditor
-          data={d as unknown as ImageData}
-          onChange={onChange as (d: Partial<ImageData>) => void}
-        />
-      )}
-      {block.type === "video" && (
-        <VideoEditor
-          data={d as unknown as VideoData}
-          onChange={onChange as (d: Partial<VideoData>) => void}
-        />
-      )}
-      {block.type === "form" && (
-        <FormEditor
-          data={d as unknown as FormData}
-          onChange={onChange as (d: Partial<FormData>) => void}
-        />
-      )}
-      {block.type === "cta" && (
-        <CTAEditor
-          data={d as unknown as CTAData}
-          onChange={onChange as (d: Partial<CTAData>) => void}
-        />
-      )}
-      {block.type === "features" && (
-        <FeaturesEditor
-          data={d as unknown as FeaturesData}
-          onChange={onChange as (d: Partial<FeaturesData>) => void}
-        />
-      )}
-      {block.type === "testimonial" && (
-        <TestimonialEditor
-          data={d as unknown as TestimonialData}
-          onChange={onChange as (d: Partial<TestimonialData>) => void}
-        />
-      )}
-      {block.type === "divider" && (
-        <DividerEditor
-          data={d as unknown as DividerData}
-          onChange={onChange as (d: Partial<DividerData>) => void}
-        />
-      )}
-      {block.type === "spacer" && (
-        <SpacerEditor
-          data={d as unknown as SpacerData}
-          onChange={onChange as (d: Partial<SpacerData>) => void}
-        />
+      {/* Tab content */}
+      {activeTab === "content" ? (
+        <div style={{ flex: 1 }}>
+          {block.type === "hero" && (
+            <HeroEditor data={d as unknown as HeroData} onChange={onChange as (d: Partial<HeroData>) => void} />
+          )}
+          {block.type === "text" && (
+            <TextEditor data={d as unknown as TextData} onChange={onChange as (d: Partial<TextData>) => void} />
+          )}
+          {block.type === "image" && (
+            <ImageEditor data={d as unknown as ImageData} onChange={onChange as (d: Partial<ImageData>) => void} />
+          )}
+          {block.type === "video" && (
+            <VideoEditor data={d as unknown as VideoData} onChange={onChange as (d: Partial<VideoData>) => void} />
+          )}
+          {block.type === "form" && (
+            <FormEditor data={d as unknown as FormData} onChange={onChange as (d: Partial<FormData>) => void} />
+          )}
+          {block.type === "cta" && (
+            <CTAEditor data={d as unknown as CTAData} onChange={onChange as (d: Partial<CTAData>) => void} />
+          )}
+          {block.type === "features" && (
+            <FeaturesEditor data={d as unknown as FeaturesData} onChange={onChange as (d: Partial<FeaturesData>) => void} />
+          )}
+          {block.type === "testimonial" && (
+            <TestimonialEditor data={d as unknown as TestimonialData} onChange={onChange as (d: Partial<TestimonialData>) => void} />
+          )}
+          {block.type === "divider" && (
+            <DividerEditor data={d as unknown as DividerData} onChange={onChange as (d: Partial<DividerData>) => void} />
+          )}
+          {block.type === "spacer" && (
+            <SpacerEditor data={d as unknown as SpacerData} onChange={onChange as (d: Partial<SpacerData>) => void} />
+          )}
+        </div>
+      ) : (
+        <div style={{ flex: 1, padding: "12px 16px" }}>
+          <StyleEditor styles={block.styles ?? {}} onChange={onStyleChange} />
+        </div>
       )}
     </div>
   );

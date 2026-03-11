@@ -10,6 +10,7 @@ import React, {
 import {
   Block,
   BlockType,
+  ElementStyles,
   BLOCK_DEFAULTS,
   newBlockId,
 } from "@/types/funnel";
@@ -29,6 +30,10 @@ interface BuilderContextValue {
 
   addBlock: (type: BlockType, afterId?: string) => string;
   updateBlock: (id: string, data: Record<string, unknown>) => void;
+  updateBlockStyles: (id: string, styles: ElementStyles) => void;
+  updateBlockName: (id: string, name: string) => void;
+  toggleBlockHidden: (id: string) => void;
+  toggleBlockLocked: (id: string) => void;
   deleteBlock: (id: string) => void;
   moveBlock: (id: string, direction: "up" | "down") => void;
   duplicateBlock: (id: string) => void;
@@ -139,6 +144,42 @@ export function BuilderProvider({
     [applyBlocks]
   );
 
+  const updateBlockStyles = useCallback(
+    (id: string, styles: ElementStyles) => {
+      applyBlocks((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, styles } : b))
+      );
+    },
+    [applyBlocks]
+  );
+
+  const updateBlockName = useCallback(
+    (id: string, name: string) => {
+      // Name change doesn't push undo history (non-destructive metadata)
+      setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, name } : b)));
+      setIsDirty(true);
+    },
+    []
+  );
+
+  const toggleBlockHidden = useCallback(
+    (id: string) => {
+      applyBlocks((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, hidden: !b.hidden } : b))
+      );
+    },
+    [applyBlocks]
+  );
+
+  const toggleBlockLocked = useCallback(
+    (id: string) => {
+      applyBlocks((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, locked: !b.locked } : b))
+      );
+    },
+    [applyBlocks]
+  );
+
   const deleteBlock = useCallback(
     (id: string) => {
       applyBlocks((prev) => prev.filter((b) => b.id !== id));
@@ -211,6 +252,10 @@ export function BuilderProvider({
         setDeviceMode,
         addBlock,
         updateBlock,
+        updateBlockStyles,
+        updateBlockName,
+        toggleBlockHidden,
+        toggleBlockLocked,
         deleteBlock,
         moveBlock,
         duplicateBlock,
