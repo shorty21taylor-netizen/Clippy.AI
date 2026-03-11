@@ -330,6 +330,82 @@ body {
   opacity: 1;
 }
 
+/* ─── Builder (dark theme override) ─────────────────────────────────────── */
+/* Applied via [data-builder] attribute on the builder root element */
+[data-builder] {
+  --bg-base:    #09090b;
+  --bg-surface: #18181b;
+  --bg-elevated:#27272a;
+  --bg-hover:   #3f3f46;
+  --bg-canvas:  #0c0c0e;
+
+  --border-default: rgba(255,255,255,0.06);
+  --border-hover:   rgba(255,255,255,0.12);
+  --border-active:  rgba(255,255,255,0.20);
+
+  --text-primary:   #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted:     #71717a;
+  --text-disabled:  #52525b;
+
+  --accent:            #3b82f6;
+  --accent-hover:      #60a5fa;
+  --accent-glow:       rgba(59,130,246,0.15);
+  --accent-glow-strong:rgba(59,130,246,0.30);
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error:   #ef4444;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+}
+
+[data-builder] ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.10);
+}
+[data-builder] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* Canvas content resets to light theme for live preview */
+[data-canvas-content] {
+  --bg-base:    #ffffff;
+  --bg-surface: #ffffff;
+  --text-primary:   #09090b;
+  --text-secondary: #71717a;
+  --border-default: #e4e4e7;
+  background: #ffffff;
+  color: #09090b;
+}
+
+/* Builder element entrance animation */
+@keyframes builder-element-in {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+@keyframes builder-element-out {
+  from { opacity: 1; transform: scale(1);    }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+@keyframes builder-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #3b82f6, 0 0 12px rgba(59,130,246,0.2); }
+  50%       { box-shadow: 0 0 0 2px #3b82f6, 0 0 24px rgba(59,130,246,0.4); }
+}
+@keyframes drop-zone-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
+}
+
+.builder-element-enter { animation: builder-element-in 150ms ease-out forwards; }
+.builder-drop-zone { animation: drop-zone-pulse 1.2s ease infinite; }
+
 /* Gradient border hero variant (used sparingly) */
 .gradient-border {
   position: relative;
