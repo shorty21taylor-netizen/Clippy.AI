@@ -8,6 +8,11 @@ const patchSchema = z.object({
   suggestedCaption: z.string().optional(),
   suggestedHashtags: z.array(z.string()).optional(),
   title: z.string().max(200).optional(),
+  // AI copy fields
+  hookText: z.string().max(200).optional().nullable(),
+  captions: z.record(z.string(), z.unknown()).optional().nullable(),
+  hashtagSets: z.record(z.string(), z.unknown()).optional().nullable(),
+  selectedCaptionStyle: z.string().optional(),
 });
 
 // GET /api/clips/[id]
@@ -88,9 +93,15 @@ export async function PATCH(
     return NextResponse.json({ error: e.message }, { status: e.status });
   }
 
+  const { captions, hashtagSets, ...rest } = parsed.data;
+
   const updated = await db.clip.update({
     where: { id },
-    data: parsed.data,
+    data: {
+      ...rest,
+      ...(captions !== undefined && { captions: captions as object }),
+      ...(hashtagSets !== undefined && { hashtagSets: hashtagSets as object }),
+    },
   });
 
   return NextResponse.json({ clip: updated });

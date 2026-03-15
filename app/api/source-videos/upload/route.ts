@@ -8,6 +8,8 @@ export async function POST(req: Request) {
   const workspaceId = formData.get("workspaceId") as string;
   const title = (formData.get("title") as string) || "Uploaded video";
   const file = formData.get("file") as File | null;
+  const goal = (formData.get("goal") as string) || null;
+  const goalSettingsRaw = formData.get("goalSettings") as string | null;
 
   if (!workspaceId) {
     return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
@@ -41,6 +43,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message }, { status: e.status });
   }
 
+  let goalSettings: object | null = null;
+  if (goalSettingsRaw) {
+    try {
+      goalSettings = JSON.parse(goalSettingsRaw);
+    } catch {
+      // ignore invalid JSON
+    }
+  }
+
   // Save file to storage
   const buffer = Buffer.from(await file.arrayBuffer());
   const ext = file.name.split(".").pop() || "mp4";
@@ -53,6 +64,8 @@ export async function POST(req: Request) {
       title,
       sourceType: "FILE_UPLOAD",
       sourceFilePath: filePath,
+      goal,
+      goalSettings: goalSettings ?? undefined,
       status: "PENDING",
     },
   });

@@ -6,6 +6,11 @@ import {
   CLIP_DETECTION_SYSTEM_PROMPT,
   buildClipDetectionPrompt,
 } from "@/lib/prompts/clip-detection";
+import {
+  CLIP_COPYWRITING_SYSTEM_PROMPT,
+  buildCopywritingPrompt,
+  type CopywritingResponse,
+} from "@/lib/prompts/clip-copywriting";
 import type { ClipType } from "@prisma/client";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -82,25 +87,35 @@ export async function POST(
     data: { status: "ANALYZING", errorMessage: null },
   });
 
+  // Extract goal settings stored on the video record
+  const goalSettings = (video.goalSettings ?? {}) as {
+    niche?: string;
+    targetAudience?: string;
+    tone?: string;
+    linkUrl?: string;
+    productName?: string;
+    customGoalText?: string;
+  };
+
   const userPrompt = buildClipDetectionPrompt({
     transcript: video.transcript,
     videoTitle: body.videoTitle || video.title,
     channelName: body.channelName,
-    niche: body.niche,
-    targetAudience: body.targetAudience,
+    niche: body.niche || goalSettings.niche,
+    targetAudience: body.targetAudience || goalSettings.targetAudience,
   });
 
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
+      const send = (data: object) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
+
       let rawJson = "";
       try {
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: "status", message: "Analyzing transcript with Claude..." })}\n\n`
-          )
-        );
+        send({ type: "status", stage: "analyzing", message: "Finding viral moments with AI..." });
 
         const anthropicStream = client.messages.stream({
           model: "claude-sonnet-4-20250514",
@@ -116,11 +131,7 @@ export async function POST(
             event.delta.type === "text_delta"
           ) {
             rawJson += event.delta.text;
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "progress", chars: rawJson.length })}\n\n`
-              )
-            );
+            send({ type: "progress", stage: "analyzing", chars: rawJson.length });
           }
         }
 
@@ -149,13 +160,84 @@ export async function POST(
                 suggestedHashtags: c.suggested_hashtags || [],
                 viralityReason: c.virality_reason || null,
                 transcriptExcerpt: c.transcript_excerpt || null,
+                goal: video.goal || null,
                 status: "GENERATED",
               },
             })
           )
         );
 
-        // Update source video
+        send({ type: "status", stage: "analyzing", message: `Found ${clipRecords.length} viral moments. Writing copy...` });
+
+        // ─── Stage 4: Copywriting ─────────────────────────────────────────────
+        // Only if the video has a goal (new flow) and we have an Anthropic client
+        if (video.goal && clipRecords.length > 0) {
+          send({ type: "status", stage: "copywriting", message: "Writing hooks, captions, and CTAs with AI..." });
+
+          try {
+            const copyPrompt = buildCopywritingPrompt({
+              clips: clipRecords.map((c, i) => ({
+                id: i + 1,
+                transcript_excerpt: c.transcriptExcerpt || c.title,
+                clip_type: c.clipType.toLowerCase(),
+                title: c.title,
+              })),
+              goal: video.goal,
+              customGoalText: goalSettings.customGoalText,
+              niche: goalSettings.niche,
+              targetAudience: goalSettings.targetAudience,
+              tone: goalSettings.tone,
+              linkUrl: goalSettings.linkUrl,
+              productName: goalSettings.productName,
+            });
+
+            let copyJson = "";
+            const copyStream = client.messages.stream({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 8000,
+              system: CLIP_COPYWRITING_SYSTEM_PROMPT,
+              messages: [{ role: "user", content: copyPrompt }],
+            });
+
+            for await (const event of copyStream) {
+              if (
+                event.type === "content_block_delta" &&
+                event.delta.type === "text_delta"
+              ) {
+                copyJson += event.delta.text;
+                send({ type: "progress", stage: "copywriting", chars: copyJson.length });
+              }
+            }
+
+            const cleanedCopy = copyJson.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+            const copyResult = JSON.parse(cleanedCopy) as CopywritingResponse;
+
+            // Update each clip with the copy data
+            await db.$transaction(
+              copyResult.clips.map((copyClip, i) => {
+                const dbClip = clipRecords[i];
+                if (!dbClip) return db.clip.update({ where: { id: clipRecords[0].id }, data: {} });
+                return db.clip.update({
+                  where: { id: dbClip.id },
+                  data: {
+                    hookText: copyClip.hook_text || null,
+                    captions: copyClip.captions as object,
+                    hashtagSets: copyClip.hashtags as object,
+                    selectedCaptionStyle: "curiosity",
+                  },
+                });
+              })
+            );
+
+            send({ type: "status", stage: "copywriting", message: "Copy written for all clips." });
+          } catch (copyErr) {
+            // Copywriting failure is non-fatal — clips still exist without copy
+            console.error("Copywriting stage failed:", copyErr);
+            send({ type: "warning", message: "Copy generation failed. You can regenerate per-clip later." });
+          }
+        }
+
+        // Update source video to ANALYZED
         await db.sourceVideo.update({
           where: { id },
           data: {
@@ -164,7 +246,6 @@ export async function POST(
           },
         });
 
-        // Update title if provided in analysis
         if (body.videoTitle) {
           await db.sourceVideo.update({
             where: { id },
@@ -172,16 +253,18 @@ export async function POST(
           });
         }
 
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "complete",
-              videoSummary: result.video_summary,
-              clipsCount: clipRecords.length,
-              clips: clipRecords,
-            })}\n\n`
-          )
-        );
+        // Fetch updated clips with copy data
+        const updatedClips = await db.clip.findMany({
+          where: { sourceVideoId: id },
+          orderBy: { viralityScore: "desc" },
+        });
+
+        send({
+          type: "complete",
+          videoSummary: result.video_summary,
+          clipsCount: clipRecords.length,
+          clips: updatedClips,
+        });
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       } catch (err) {
@@ -200,9 +283,7 @@ export async function POST(
           data: { status: "ERROR", errorMessage: message },
         });
 
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "error", error: message })}\n\n`)
-        );
+        send({ type: "error", error: message });
         controller.close();
       }
     },

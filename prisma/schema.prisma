@@ -210,6 +210,8 @@ model SourceVideo {
   duration       Int?            // total seconds
   transcript     String?         @db.Text
   clipAnalysis   Json?           // Claude's raw JSON response
+  goal           String?         // user's selected goal for this video
+  goalSettings   Json?           // { tone, niche, targetAudience, linkUrl, productName, customGoalText, maxClips, captionStyle }
   status         IngestionStatus @default(PENDING)
   errorMessage   String?
   createdAt      DateTime        @default(now())
@@ -225,25 +227,31 @@ model SourceVideo {
 // ─── Clips (short-form clips from source videos) ────────────────────────────
 
 model Clip {
-  id                String     @id @default(cuid())
-  sourceVideoId     String
-  title             String
-  startTime         String     // "MM:SS"
-  endTime           String     // "MM:SS"
-  duration          Int        // seconds
-  viralityScore     Int        // 1-10
-  clipType          ClipType
-  hook              String?
-  suggestedCaption  String?
-  suggestedHashtags String[]   @default([])
-  viralityReason    String?
-  transcriptExcerpt String?
-  videoPath         String?    // path to generated clip file
-  thumbnailPath     String?
-  srtPath           String?    // subtitle file
-  status            ClipStatus @default(GENERATED)
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  id                   String     @id @default(cuid())
+  sourceVideoId        String
+  title                String
+  startTime            String     // "MM:SS"
+  endTime              String     // "MM:SS"
+  duration             Int        // seconds
+  viralityScore        Int        // 1-10
+  clipType             ClipType
+  hook                 String?
+  suggestedCaption     String?
+  suggestedHashtags    String[]   @default([])
+  viralityReason       String?
+  transcriptExcerpt    String?
+  videoPath            String?    // path to generated clip file
+  thumbnailPath        String?
+  srtPath              String?    // subtitle file
+  status               ClipStatus @default(GENERATED)
+  // AI Copywriting fields
+  hookText             String?    // On-screen hook text (max 15 words)
+  captions             Json?      // { tiktok: [{style,text,cta}x3], instagram: [{style,text,cta}x3] }
+  hashtagSets          Json?      // { tiktok: string[], instagram: string[] }
+  selectedCaptionStyle String?    @default("curiosity")
+  goal                 String?    // Goal used to generate copy
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
   sourceVideo SourceVideo  @relation(fields: [sourceVideoId], references: [id], onDelete: Cascade)
   publishLogs PublishLog[]

@@ -14,6 +14,8 @@ const bodySchema = z.object({
       { message: "Must be a valid YouTube URL" }
     ),
   title: z.string().max(200).optional(),
+  goal: z.string().optional(),
+  goalSettings: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function POST(req: Request) {
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { workspaceId, url, title } = parsed.data;
+  const { workspaceId, url, title, goal, goalSettings } = parsed.data;
 
   try {
     await requireWorkspaceMember(workspaceId, ["OWNER", "ADMIN"]);
@@ -41,6 +43,8 @@ export async function POST(req: Request) {
       title: title || url,
       sourceType: "YOUTUBE_URL",
       sourceUrl: url,
+      goal: goal || null,
+      goalSettings: (goalSettings as object) || null,
       status: "PENDING",
     },
   });
