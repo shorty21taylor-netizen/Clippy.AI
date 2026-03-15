@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Upload,
   Search,
   RefreshCw,
   Users,
+  CheckCircle2,
+  XCircle,
+  X,
 } from "lucide-react";
 import { Topbar } from "@/components/layout/topbar";
 import { Button } from "@/components/ui/button";
@@ -32,7 +36,62 @@ interface StatusCount {
   _count: { id: number };
 }
 
-// ─── Stats bar ────────────────────────────────────────────────────────────────
+// ─── Flash banner (success / error from OAuth callback) ───────────────────────
+
+const ERROR_MESSAGES: Record<string, string> = {
+  instagram_access_denied: "Instagram connection was cancelled.",
+  instagram_missing_params: "Instagram OAuth returned unexpected parameters.",
+  instagram_invalid_state: "OAuth state mismatch — possible CSRF attempt.",
+  instagram_token_failed: "Could not exchange Instagram authorization code.",
+  instagram_no_pages: "No Facebook Pages found. Your account must manage at least one Page.",
+  instagram_no_business_accounts: "No Instagram Business or Creator accounts linked to your Pages.",
+  instagram_oauth_failed: "Instagram connection failed. Please try again.",
+  tiktok_access_denied: "TikTok connection was cancelled.",
+  tiktok_missing_params: "TikTok OAuth returned unexpected parameters.",
+  tiktok_invalid_state: "OAuth state mismatch — possible CSRF attempt.",
+  tiktok_token_exchange_failed: "Could not exchange TikTok authorization code.",
+  tiktok_oauth_failed: "TikTok connection failed. Please try again.",
+};
+
+function FlashBanner({
+  type,
+  message,
+  onDismiss,
+}: {
+  type: "success" | "error";
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
+      className={cn(
+        "flex items-center gap-3 rounded-[--radius-lg] border px-4 py-3 text-sm",
+        type === "success"
+          ? "bg-[--status-success-muted] border-[--status-success]/25 text-[--status-success]"
+          : "bg-[--status-error-muted] border-[--status-error]/25 text-[--status-error]"
+      )}
+    >
+      {type === "success" ? (
+        <CheckCircle2 size={15} className="shrink-0" />
+      ) : (
+        <XCircle size={15} className="shrink-0" />
+      )}
+      <span className="flex-1">{message}</span>
+      <button
+        onClick={onDismiss}
+        className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+      >
+        <X size={14} />
+      </button>
+    </motion.div>
+  );
+}
+
+// ─── Stats chip ────────────────────────────────────────────────────────────────
 
 function StatChip({
   label,
@@ -77,6 +136,8 @@ function StatChip({
 
 export default function SocialAccountsPage() {
   const { workspace } = useWorkspace();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [platformCounts, setPlatformCounts] = useState<PlatformCount[]>([]);
@@ -93,6 +154,35 @@ export default function SocialAccountsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<SocialAccount | null>(null);
+
+  // Flash banner from OAuth callback
+  const [flash, setFlash] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Parse OAuth callback params on mount
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const error = searchParams.get("error");
+    const count = searchParams.get("count");
+
+    if (success) {
+      if (success === "instagram_connected") {
+        const n = count ? parseInt(count, 10) : 1;
+        setFlash({
+          type: "success",
+          message: `Successfully connected ${n} Instagram account${n !== 1 ? "s" : ""}.`,
+        });
+      } else if (success === "tiktok_connected") {
+        setFlash({ type: "success", message: "TikTok account connected successfully." });
+      }
+      // Clear query params from URL without re-render
+      router.replace("/dashboard/social-accounts", { scroll: false });
+    } else if (error) {
+      const msg = ERROR_MESSAGES[error] ?? "Something went wrong. Please try again.";
+      setFlash({ type: "error", message: msg });
+      router.replace("/dashboard/social-accounts", { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchAccounts = useCallback(
     async (silent = false) => {
@@ -150,6 +240,17 @@ export default function SocialAccountsPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[1280px] w-full mx-auto p-6 space-y-5">
 
+          {/* Flash banner */}
+          <AnimatePresence>
+            {flash && (
+              <FlashBanner
+                type={flash.type}
+                message={flash.message}
+                onDismiss={() => setFlash(null)}
+              />
+            )}
+          </AnimatePresence>
+
           {/* Header row */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -184,7 +285,7 @@ export default function SocialAccountsPage() {
               </Button>
               <Button size="md" onClick={() => setAddOpen(true)}>
                 <Plus size={14} />
-                Add account
+                Connect account
               </Button>
             </div>
           </div>
@@ -343,7 +444,6 @@ export default function SocialAccountsPage() {
       <AddAccountModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSuccess={() => fetchAccounts(true)}
       />
       <EditAccountModal
         account={editTarget}

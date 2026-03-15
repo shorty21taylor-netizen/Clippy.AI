@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
+  Users2,
   Wand2,
   CalendarClock,
   Funnel,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { label: "Clip Finder",     href: "/dashboard/clips",           icon: Scissors },
   { label: "Publisher",       href: "/dashboard/publish",         icon: CalendarClock },
   { label: "Funnels",         href: "/dashboard/funnels",         icon: Funnel },
+  { label: "Leads",           href: "/dashboard/leads",           icon: Users2 },
   { label: "Analytics",       href: "/dashboard/analytics",       icon: BarChart3 },
 ];
 

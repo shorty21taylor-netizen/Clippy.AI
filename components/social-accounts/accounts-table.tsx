@@ -12,6 +12,7 @@ import {
   WifiOff,
   Users,
   Wifi,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PlatformIcon, PLATFORM_LABELS } from "./platform-icon";
@@ -66,12 +67,17 @@ function ActionMenu({
   account,
   onEdit,
   onDelete,
+  onReconnect,
 }: {
   account: SocialAccount;
   onEdit: () => void;
   onDelete: () => void;
+  onReconnect?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const canReconnect =
+    account.status === "DISCONNECTED" &&
+    (account.platform === "INSTAGRAM" || account.platform === "TIKTOK");
 
   return (
     <div className="relative">
@@ -97,8 +103,23 @@ function ActionMenu({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: -4 }}
               transition={{ duration: 0.12 }}
-              className="absolute right-0 top-8 z-20 w-40 rounded-[--radius-md] bg-[--bg-modal] border border-[--border-default] shadow-[0_8px_24px_rgba(0,0,0,0.5)] overflow-hidden"
+              className="absolute right-0 top-8 z-20 w-44 rounded-[--radius-md] bg-[--bg-modal] border border-[--border-default] shadow-[0_8px_24px_rgba(0,0,0,0.5)] overflow-hidden"
             >
+              {canReconnect && (
+                <>
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      onReconnect?.();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[--status-warning] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+                  >
+                    <RefreshCw size={13} />
+                    Reconnect
+                  </button>
+                  <div className="h-px bg-[--border-subtle] mx-2" />
+                </>
+              )}
               <button
                 onClick={() => {
                   setOpen(false);
@@ -209,6 +230,12 @@ export function AccountsTable({
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleReconnect = (account: SocialAccount) => {
+    if (!workspace) return;
+    const platform = account.platform.toLowerCase();
+    window.location.href = `/api/auth/${platform}?workspaceId=${workspace.id}`;
   };
 
   if (accounts.length === 0) {
@@ -366,6 +393,7 @@ export function AccountsTable({
                       account={account}
                       onEdit={() => onEdit(account)}
                       onDelete={() => setDeleteTarget(account)}
+                      onReconnect={() => handleReconnect(account)}
                     />
                   </td>
                 </motion.tr>
