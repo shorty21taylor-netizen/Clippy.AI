@@ -294,10 +294,41 @@ export async function GET(req: Request) {
   return NextResponse.json({
     timeRange,
     ...currentStats,
+    previousPeriod: {
+      totalViews: prevStats.totalViews,
+      totalLikes: prevStats.totalLikes,
+      totalComments: prevStats.totalComments,
+      totalShares: prevStats.totalShares,
+      engagementRate: prevStats.engagementRate,
+      totalClipsPosted: prevStats.totalClipsPosted,
+    },
     trends,
     viewsOverTime,
     engagementBreakdown,
     platformSplit,
     topClips,
+    postingHeatmap: buildHeatmap(publishLogs),
+  });
+}
+
+// Build 7×24 posting heatmap from publish logs
+function buildHeatmap(
+  logs: Array<{ publishedAt: Date | null; analytics: Array<{ engagementRate: number }> }>
+): Array<{ day: number; hour: number; count: number; avgEngagement: number }> {
+  const map = new Map<string, { count: number; engSum: number }>();
+  for (const log of logs) {
+    if (!log.publishedAt) continue;
+    const d = log.publishedAt;
+    const day = d.getDay(); // 0=Sun..6=Sat
+    const hour = d.getHours();
+    const key = `${day}-${hour}`;
+    const entry = map.get(key) || { count: 0, engSum: 0 };
+    entry.count++;
+    entry.engSum += log.analytics[0]?.engagementRate ?? 0;
+    map.set(key, entry);
+  }
+  return Array.from(map.entries()).map(([key, { count, engSum }]) => {
+    const [day, hour] = key.split("-").map(Number);
+    return { day, hour, count, avgEngagement: count > 0 ? parseFloat((engSum / count).toFixed(2)) : 0 };
   });
 }
