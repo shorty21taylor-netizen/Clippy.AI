@@ -2,6 +2,32 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireWorkspaceMember } from "@/lib/workspace";
 
+// GET /api/workspaces/[workspaceId]/settings — fetch workspace settings
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ workspaceId: string }> }
+) {
+  const { workspaceId } = await params;
+
+  try {
+    await requireWorkspaceMember(workspaceId);
+  } catch (err: unknown) {
+    const e = err as { status: number; message: string };
+    return NextResponse.json({ error: e.message }, { status: e.status });
+  }
+
+  const workspace = await db.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true, name: true, slug: true, challengeTicketPrice: true, coachingProgramPrice: true },
+  });
+
+  if (!workspace) {
+    return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ workspace });
+}
+
 // PATCH /api/workspaces/[workspaceId]/settings
 export async function PATCH(
   req: Request,

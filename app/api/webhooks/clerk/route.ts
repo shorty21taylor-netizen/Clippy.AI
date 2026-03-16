@@ -7,6 +7,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { slugify, uniqueSlug } from "@/lib/workspace";
 
 // We do lightweight event handling without the Svix SDK for simplicity.
 // In production, add `npm install svix` and verify the webhook signature.
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
   const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || null;
 
   if (type === "user.created" || type === "user.updated") {
-    await db.user.upsert({
+    const dbUser = await db.user.upsert({
       where: { clerkId: data.id },
       create: {
         clerkId: data.id,
@@ -59,6 +60,29 @@ export async function POST(req: Request) {
         avatarUrl: data.image_url,
       },
     });
+
+    // Auto-create a default workspace for brand new users
+    if (type === "user.created") {
+      const existingMembership = await db.workspaceMember.findFirst({
+        where: { userId: dbUser.id },
+      });
+      if (!existingMembership) {
+        const workspaceName = data.first_name
+          ? `${data.first_name}'s Workspace`
+          : "My Workspace";
+        const baseSlug = slugify(workspaceName) + "-" + dbUser.id.slice(-4);
+        const slug = await uniqueSlug(baseSlug);
+        await db.workspace.create({
+          data: {
+            name: workspaceName,
+            slug,
+            members: {
+              create: { userId: dbUser.id, role: "OWNER" },
+            },
+          },
+        });
+      }
+    }
   }
 
   if (type === "user.deleted") {
