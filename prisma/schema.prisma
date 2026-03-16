@@ -95,12 +95,14 @@ enum LeadStatus {
 // ─── Core Models ─────────────────────────────────────────────────────────────
 
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  plan      String   @default("free")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String
+  slug                 String   @unique
+  plan                 String   @default("free")
+  challengeTicketPrice Float?   @default(197)
+  coachingProgramPrice Float?   @default(6000)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   members        WorkspaceMember[]
   socialAccounts SocialAccount[]
@@ -296,20 +298,22 @@ model PublishLog {
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
 model Analytics {
-  id              String   @id @default(cuid())
-  publishLogId    String
-  socialAccountId String
-  views           Int      @default(0)
-  likes           Int      @default(0)
-  comments        Int      @default(0)
-  shares          Int      @default(0)
-  saves           Int      @default(0)
-  reach           Int      @default(0)
-  impressions     Int      @default(0)
-  engagementRate  Float    @default(0)
-  fetchedAt       DateTime @default(now())
-  rawData         Json?
-  createdAt       DateTime @default(now())
+  id                  String   @id @default(cuid())
+  publishLogId        String
+  socialAccountId     String
+  views               Int      @default(0)
+  likes               Int      @default(0)
+  comments            Int      @default(0)
+  shares              Int      @default(0)
+  saves               Int      @default(0)
+  reach               Int      @default(0)
+  impressions         Int      @default(0)
+  plays               Int      @default(0)
+  engagementRate      Float    @default(0)
+  followerCountAtTime Int?
+  fetchedAt           DateTime @default(now())
+  rawData             Json?
+  createdAt           DateTime @default(now())
 
   publishLog    PublishLog    @relation(fields: [publishLogId], references: [id], onDelete: Cascade)
   socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
