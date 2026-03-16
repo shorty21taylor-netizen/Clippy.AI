@@ -25,6 +25,10 @@ import {
   Activity,
   Loader2,
   ArrowRight,
+  Check,
+  X,
+  Clock,
+  Filter,
 } from "lucide-react";
 import {
   AreaChart,
@@ -69,6 +73,15 @@ function fmtPct(n: number): string {
   return n.toFixed(2) + "%";
 }
 
+function fmtAgo(date: Date | null): string {
+  if (!date) return "";
+  const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (secs < 60) return "just now";
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface OverviewData {
@@ -79,6 +92,14 @@ interface OverviewData {
   totalSaves: number;
   engagementRate: number;
   totalClipsPosted: number;
+  previousPeriod?: {
+    totalViews: number;
+    totalLikes: number;
+    totalComments: number;
+    totalShares: number;
+    engagementRate: number;
+    totalClipsPosted: number;
+  };
   trends: {
     views: number;
     likes: number;
@@ -106,6 +127,7 @@ interface OverviewData {
     platforms: string[];
     publishedAt: string;
   }>;
+  postingHeatmap?: Array<{ day: number; hour: number; count: number; avgEngagement: number }>;
 }
 
 interface AccountData {
@@ -120,6 +142,7 @@ interface AccountData {
   publishedPostsCount: number;
   avgViews: number;
   avgEngagement: number;
+  totalViews: number;
   recentViews: number[];
 }
 
@@ -580,9 +603,11 @@ function RevenueFunnel({ data }: { data: OverviewData | null }) {
 function OverviewStatCards({
   data,
   loading,
+  compareOn = false,
 }: {
   data: OverviewData | null;
   loading: boolean;
+  compareOn?: boolean;
 }) {
   if (loading || !data) {
     return (
@@ -598,14 +623,13 @@ function OverviewStatCards({
     );
   }
 
-  const pageVisits = Math.round(data.totalViews * 0.004);
-  const leadsEstimate = Math.round(pageVisits * 0.05);
-  const estRevenue = Math.round(leadsEstimate * 0.05 * 997);
+  const prev = data.previousPeriod;
 
   const stats = [
     {
       label: "Total Views",
       value: fmt(data.totalViews),
+      prevValue: prev ? fmt(prev.totalViews) : null,
       trend: data.trends.views,
       icon: Eye,
       color: "#3B82F6",
@@ -615,47 +639,52 @@ function OverviewStatCards({
     {
       label: "Engagement Rate",
       value: fmtPct(data.engagementRate),
+      prevValue: prev ? fmtPct(prev.engagementRate) : null,
       trend: data.trends.engagementRate,
       icon: Heart,
       color: "#F43F5E",
       orb: "rgba(244,63,94,0.08)",
-      sparkData: data.viewsOverTime.map((_, i) => data.engagementRate + (Math.random() - 0.5) * 0.5),
+      sparkData: data.viewsOverTime.map(() => data.engagementRate),
     },
     {
-      label: "New Followers",
-      value: "N/A",
-      trend: 0,
-      icon: Users,
+      label: "Clips Posted",
+      value: data.totalClipsPosted.toString(),
+      prevValue: prev ? prev.totalClipsPosted.toString() : null,
+      trend: data.trends.clipsPosted,
+      icon: Activity,
       color: "#A855F7",
       orb: "rgba(168,85,247,0.08)",
       sparkData: [] as number[],
     },
     {
-      label: "Landing Page Visits",
-      value: fmt(pageVisits),
-      trend: data.trends.views * 0.8,
-      icon: ExternalLink,
-      color: "#06B6D4",
-      orb: "rgba(6,182,212,0.08)",
-      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.004)),
+      label: "Total Likes",
+      value: fmt(data.totalLikes),
+      prevValue: prev ? fmt(prev.totalLikes) : null,
+      trend: data.trends.likes,
+      icon: Heart,
+      color: "#F43F5E",
+      orb: "rgba(244,63,94,0.08)",
+      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.05)),
     },
     {
-      label: "New Leads (Est.)",
-      value: fmt(leadsEstimate),
-      trend: data.trends.views * 0.6,
-      icon: Zap,
+      label: "Total Comments",
+      value: fmt(data.totalComments),
+      prevValue: prev ? fmt(prev.totalComments) : null,
+      trend: data.trends.comments,
+      icon: MessageCircle,
+      color: "#22C55E",
+      orb: "rgba(34,197,94,0.08)",
+      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.012)),
+    },
+    {
+      label: "Total Shares",
+      value: fmt(data.totalShares),
+      prevValue: prev ? fmt(prev.totalShares) : null,
+      trend: data.trends.shares,
+      icon: Share2,
       color: "#F59E0B",
       orb: "rgba(245,158,11,0.08)",
-      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.004 * 0.05)),
-    },
-    {
-      label: "Est. Revenue",
-      value: fmtCurrency(estRevenue),
-      trend: data.trends.views * 0.5,
-      icon: DollarSign,
-      color: "#10B981",
-      orb: "rgba(16,185,129,0.08)",
-      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.004 * 0.05 * 0.05 * 997)),
+      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.008)),
     },
   ];
 
@@ -701,8 +730,13 @@ function OverviewStatCards({
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>{s.label}</span>
-              {s.trend !== 0 && s.value !== "N/A" && <TrendBadge value={s.trend} />}
+              {s.trend !== 0 && <TrendBadge value={s.trend} />}
             </div>
+            {compareOn && s.prevValue && (
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 6 }}>
+                vs {s.prevValue} prev period
+              </div>
+            )}
           </div>
         );
       })}
@@ -839,6 +873,102 @@ function EngagementBreakdownChart({ data }: { data: OverviewData | null }) {
   );
 }
 
+// ─── Posting Time Heatmap ────────────────────────────────────────────────────
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const HOUR_LABELS = ["12a", "3a", "6a", "9a", "12p", "3p", "6p", "9p"];
+
+function PostingHeatmap({ data }: { data: OverviewData | null }) {
+  const heatmap = data?.postingHeatmap ?? [];
+  // Build 7×24 grid
+  const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+  let maxEng = 0;
+  for (const cell of heatmap) {
+    if (cell.day >= 0 && cell.day < 7 && cell.hour >= 0 && cell.hour < 24) {
+      grid[cell.day][cell.hour] = cell.avgEngagement;
+      if (cell.avgEngagement > maxEng) maxEng = cell.avgEngagement;
+    }
+  }
+
+  return (
+    <div style={{ ...CARD_STYLE, padding: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <Clock size={16} style={{ color: "#F59E0B" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Best Posting Times</span>
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-tertiary)" }}>
+          Avg engagement rate by day & hour
+        </span>
+      </div>
+      {heatmap.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "32px 0", color: "var(--text-tertiary)", fontSize: 13 }}>
+          No posting history yet. Publish clips to see the best times.
+        </div>
+      ) : (
+        <div>
+          {/* Hour labels */}
+          <div style={{ display: "flex", marginLeft: 36, marginBottom: 4, gap: 0 }}>
+            {Array.from({ length: 24 }).map((_, h) => (
+              <div
+                key={h}
+                style={{
+                  flex: 1,
+                  fontSize: 9,
+                  color: "var(--text-tertiary)",
+                  textAlign: "center",
+                  opacity: h % 3 === 0 ? 1 : 0,
+                }}
+              >
+                {HOUR_LABELS[Math.floor(h / 3)]}
+              </div>
+            ))}
+          </div>
+          {/* Rows */}
+          {DAY_LABELS.map((day, dayIdx) => (
+            <div key={dayIdx} style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 3 }}>
+              <div style={{ width: 32, fontSize: 10, color: "var(--text-tertiary)", textAlign: "right", paddingRight: 6 }}>
+                {day}
+              </div>
+              {Array.from({ length: 24 }).map((_, hourIdx) => {
+                const val = grid[dayIdx][hourIdx];
+                const intensity = maxEng > 0 ? val / maxEng : 0;
+                const bg = intensity > 0
+                  ? `rgba(59,130,246,${Math.max(0.08, intensity)})`
+                  : "var(--bg-subtle)";
+                return (
+                  <div
+                    key={hourIdx}
+                    title={val > 0 ? `${day} ${hourIdx}:00 — ${val.toFixed(1)}% avg engagement` : undefined}
+                    style={{
+                      flex: 1,
+                      height: 16,
+                      background: bg,
+                      borderRadius: 3,
+                      margin: "0 1px",
+                      cursor: val > 0 ? "pointer" : "default",
+                      border: intensity > 0.8 ? "1px solid rgba(59,130,246,0.4)" : "none",
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+          {/* Legend */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, justifyContent: "flex-end" }}>
+            <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>Low</span>
+            {[0.1, 0.3, 0.5, 0.7, 1.0].map((v, i) => (
+              <div
+                key={i}
+                style={{ width: 12, height: 12, borderRadius: 2, background: `rgba(59,130,246,${v})` }}
+              />
+            ))}
+            <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>High</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TopClipsTable({ clips }: { clips: OverviewData["topClips"] }) {
   if (!clips || clips.length === 0) {
     return (
@@ -922,19 +1052,20 @@ function TopClipsTable({ clips }: { clips: OverviewData["topClips"] }) {
 
 // ─── TAB 2: Accounts ─────────────────────────────────────────────────────────
 
-function AccountsTab({ workspaceId }: { workspaceId: string }) {
+function AccountsTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
   const [accounts, setAccounts] = useState<AccountData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AccountDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [sortBy, setSortBy] = useState("totalViews");
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/analytics/accounts?workspaceId=${workspaceId}`);
+      const res = await fetch(`/api/analytics/accounts?workspaceId=${workspaceId}&timeRange=${timeRange}`);
       if (!res.ok) throw new Error("Failed to load accounts");
       const data = await res.json();
       setAccounts(data.accounts ?? []);
@@ -943,7 +1074,7 @@ function AccountsTab({ workspaceId }: { workspaceId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, timeRange]);
 
   useEffect(() => {
     loadAccounts();
@@ -1003,10 +1134,47 @@ function AccountsTab({ workspaceId }: { workspaceId: string }) {
     );
   }
 
+  const sortedAccounts = [...accounts].sort((a, b) => {
+    if (sortBy === "avgEngagement") return b.avgEngagement - a.avgEngagement;
+    if (sortBy === "followerCount") return b.followerCount - a.followerCount;
+    if (sortBy === "postsCount") return b.publishedPostsCount - a.publishedPostsCount;
+    return (b.totalViews ?? 0) - (a.totalViews ?? 0);
+  });
+
   return (
     <div>
+      {/* Sort controls */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+        <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Sort by:</span>
+        {[
+          { value: "totalViews", label: "Total Views" },
+          { value: "avgEngagement", label: "Avg Engagement" },
+          { value: "followerCount", label: "Followers" },
+          { value: "postsCount", label: "Posts" },
+        ].map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setSortBy(opt.value)}
+            style={{
+              padding: "4px 12px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              border: "none",
+              cursor: "pointer",
+              background: sortBy === opt.value ? "#3B82F6" : "var(--bg-subtle)",
+              color: sortBy === opt.value ? "#fff" : "var(--text-secondary)",
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-tertiary)" }}>
+          {accounts.length} account{accounts.length !== 1 ? "s" : ""}
+        </span>
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-        {accounts.map((acc) => {
+        {sortedAccounts.map((acc) => {
           const isTikTok = acc.platform.toLowerCase() === "tiktok";
           const isSelected = selectedId === acc.id;
           const initials = (acc.displayName || acc.username || "?").slice(0, 2).toUpperCase();
@@ -1128,37 +1296,146 @@ function AccountsTab({ workspaceId }: { workspaceId: string }) {
 
 function AccountDetailView({ detail }: { detail: AccountDetail }) {
   const { totals, posts } = detail;
+  const postsWithMetrics = posts.filter((p) => p.metrics);
+  const bestPost = postsWithMetrics.reduce<typeof posts[0] | null>((best, p) =>
+    p.metrics && (!best || !best.metrics || p.metrics.views > best.metrics!.views) ? p : best, null);
+  const worstPost = postsWithMetrics.reduce<typeof posts[0] | null>((worst, p) =>
+    p.metrics && (!worst || !worst.metrics || p.metrics.views < worst.metrics!.views) ? p : worst, null);
+
   const stats = [
     { label: "Total Views", value: fmt(totals.views), icon: Eye, color: "#3B82F6" },
-    { label: "Engagement", value: fmt(totals.likes + totals.comments + totals.shares), icon: Heart, color: "#F43F5E" },
-    { label: "Total Posts", value: fmt(totals.posts), icon: BarChart2, color: "#F59E0B" },
+    { label: "Total Engagement", value: fmt(totals.likes + totals.comments + totals.shares + totals.saves), icon: Heart, color: "#F43F5E" },
+    { label: "Posts Published", value: totals.posts.toString(), icon: BarChart2, color: "#F59E0B" },
     { label: "Followers", value: fmt(detail.account.followerCount), icon: Users, color: "#10B981" },
   ];
 
+  // Engagement distribution for donut
+  const engTotal = totals.likes + totals.comments + totals.shares + totals.saves;
+  const engDist = [
+    { name: "Likes", value: totals.likes, color: "#3B82F6" },
+    { name: "Comments", value: totals.comments, color: "#22C55E" },
+    { name: "Shares", value: totals.shares, color: "#F59E0B" },
+    { name: "Saves", value: totals.saves, color: "#A855F7" },
+  ].filter((d) => d.value > 0);
+
+  // Views over time from posts (chronological)
+  const viewsChartData = [...posts]
+    .filter((p) => p.metrics && p.publishedAt)
+    .sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime())
+    .map((p) => ({ date: fmtDate(p.publishedAt), views: p.metrics!.views }));
+
   return (
     <div>
+      {/* 4 mini stat cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: 12, textAlign: "center" }}>
-              <Icon size={14} style={{ color: s.color, margin: "0 auto 4px" }} />
-              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{s.value}</div>
-              <div style={{ fontSize: 10, color: "var(--text-tertiary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</div>
+            <div key={s.label} style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: s.color + "1A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon size={14} style={{ color: s.color }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: "var(--text-tertiary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</div>
+              </div>
             </div>
           );
         })}
       </div>
 
+      {/* Charts row: Views Over Time + Engagement Donut */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16, marginBottom: 20 }}>
+        {viewsChartData.length > 1 && (
+          <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Views Per Post</div>
+            <ResponsiveContainer width="100%" height={140}>
+              <LineChart data={viewsChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--text-tertiary)" }} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--text-tertiary)" }} tickFormatter={(v) => fmt(v)} />
+                <Tooltip {...TOOLTIP_STYLE} formatter={(v) => fmt(Number(v))} />
+                <Line type="monotone" dataKey="views" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        {engDist.length > 0 && (
+          <div style={{ background: "var(--bg-subtle)", borderRadius: 10, padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Engagement Mix</div>
+            <ResponsiveContainer width="100%" height={100}>
+              <PieChart>
+                <Pie data={engDist} innerRadius={28} outerRadius={46} paddingAngle={2} dataKey="value" isAnimationActive={false}>
+                  {engDist.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip {...TOOLTIP_STYLE} formatter={(v, n) => [fmt(Number(v)), n]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", marginTop: 8 }}>
+              {engDist.map((e) => (
+                <div key={e.name} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: e.color }} />
+                  <span style={{ color: "var(--text-secondary)" }}>{e.name}</span>
+                  <span style={{ color: "var(--text-tertiary)" }}>
+                    {engTotal > 0 ? ((e.value / engTotal) * 100).toFixed(0) + "%" : "0%"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Best & Worst Posts */}
+      {(bestPost || worstPost) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          {bestPost && bestPost.metrics && (
+            <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <Star size={13} style={{ color: "#22C55E" }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E", textTransform: "uppercase", letterSpacing: "0.05em" }}>Best Post</span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {bestPost.clip.title}
+              </div>
+              <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--text-secondary)" }}>
+                <span><strong style={{ color: "var(--text-primary)" }}>{fmt(bestPost.metrics.views)}</strong> views</span>
+                <span><strong style={{ color: "var(--text-primary)" }}>{fmtPct(bestPost.metrics.engagementRate)}</strong> eng</span>
+                <span style={{ marginLeft: "auto", color: "var(--text-tertiary)", fontSize: 11 }}>{fmtDate(bestPost.publishedAt)}</span>
+              </div>
+            </div>
+          )}
+          {worstPost && worstPost.metrics && worstPost.publishLogId !== bestPost?.publishLogId && (
+            <div style={{ background: "rgba(244,63,94,0.05)", border: "1px solid rgba(244,63,94,0.15)", borderRadius: 10, padding: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <TrendingDown size={13} style={{ color: "#F43F5E" }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#F43F5E", textTransform: "uppercase", letterSpacing: "0.05em" }}>Needs Work</span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {worstPost.clip.title}
+              </div>
+              <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--text-secondary)" }}>
+                <span><strong style={{ color: "var(--text-primary)" }}>{fmt(worstPost.metrics.views)}</strong> views</span>
+                <span><strong style={{ color: "var(--text-primary)" }}>{fmtPct(worstPost.metrics.engagementRate)}</strong> eng</span>
+                <span style={{ marginLeft: "auto", color: "var(--text-tertiary)", fontSize: 11 }}>{fmtDate(worstPost.publishedAt)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Full post table */}
       {posts.length > 0 && (
         <div style={{ overflowX: "auto" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            Recent Posts
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            All Posts ({posts.length})
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["Title", "Posted", "Views", "Likes", "Comments", "Eng. Rate"].map((h) => (
+                {["Title", "Posted", "Views", "Likes", "Comments", "Shares", "Eng. Rate"].map((h) => (
                   <th key={h} style={{ textAlign: "left", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", padding: "0 10px 8px 0", borderBottom: "1px solid var(--border-default)", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     {h}
                   </th>
@@ -1166,30 +1443,42 @@ function AccountDetailView({ detail }: { detail: AccountDetail }) {
               </tr>
             </thead>
             <tbody>
-              {posts.slice(0, 10).map((post) => (
-                <tr key={post.publishLogId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-primary)", maxWidth: 180 }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                      {post.clip.title}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 10px 10px 0", fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
-                    {fmtDate(post.publishedAt)}
-                  </td>
-                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>
-                    {post.metrics ? fmt(post.metrics.views) : "—"}
-                  </td>
-                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
-                    {post.metrics ? fmt(post.metrics.likes) : "—"}
-                  </td>
-                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
-                    {post.metrics ? fmt(post.metrics.comments) : "—"}
-                  </td>
-                  <td style={{ padding: "10px 0 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
-                    {post.metrics ? fmtPct(post.metrics.engagementRate) : "—"}
-                  </td>
-                </tr>
-              ))}
+              {posts.map((post) => {
+                const isBest = post.publishLogId === bestPost?.publishLogId;
+                return (
+                  <tr
+                    key={post.publishLogId}
+                    style={{ borderBottom: "1px solid var(--border-subtle)", opacity: !post.metrics ? 0.5 : 1, background: isBest ? "rgba(34,197,94,0.03)" : "transparent" }}
+                  >
+                    <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-primary)", maxWidth: 200 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {isBest && <Star size={11} style={{ color: "#22C55E", flexShrink: 0 }} />}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                          {post.clip?.title ?? "—"}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "10px 10px 10px 0", fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
+                      {fmtDate(post.publishedAt)}
+                    </td>
+                    <td style={{ padding: "10px 10px 10px 0", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>
+                      {post.metrics ? fmt(post.metrics.views) : "—"}
+                    </td>
+                    <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                      {post.metrics ? fmt(post.metrics.likes) : "—"}
+                    </td>
+                    <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                      {post.metrics ? fmt(post.metrics.comments) : "—"}
+                    </td>
+                    <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                      {post.metrics ? fmt(post.metrics.shares) : "—"}
+                    </td>
+                    <td style={{ padding: "10px 0 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                      {post.metrics ? fmtPct(post.metrics.engagementRate) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -2102,6 +2391,11 @@ export default function AnalyticsPage() {
   const [platform, setPlatform] = useState<Platform>("all");
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [compareOn, setCompareOn] = useState(false);
+  const [showStaleWarning, setShowStaleWarning] = useState(false);
+  const [accountsList, setAccountsList] = useState<AccountData[]>([]);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [accountFilterOpen, setAccountFilterOpen] = useState(false);
 
   // Initial activity check — determines whether to show onboarding empty state
   const [activityChecked, setActivityChecked] = useState(false);
@@ -2135,6 +2429,15 @@ export default function AnalyticsPage() {
       loadOverview();
     }
   }, [activeTab, loadOverview]);
+
+  // Load accounts list for the account filter dropdown
+  useEffect(() => {
+    if (!workspace?.id) return;
+    fetch(`/api/analytics/accounts?workspaceId=${workspace.id}`)
+      .then((r) => r.ok ? r.json() : { accounts: [] })
+      .then((d) => setAccountsList(d.accounts ?? []))
+      .catch(() => {});
+  }, [workspace?.id]);
 
   // Check whether this workspace has any connected accounts or published clips
   useEffect(() => {
@@ -2171,6 +2474,7 @@ export default function AnalyticsPage() {
         body: JSON.stringify({ workspaceId: workspace.id }),
       });
       setLastSynced(new Date());
+      setShowStaleWarning(false);
       // Reload current tab data after sync
       if (activeTab === "overview") loadOverview();
     } catch {
@@ -2179,6 +2483,13 @@ export default function AnalyticsPage() {
       setSyncing(false);
     }
   };
+
+  // Check for stale data (> 24h since last sync)
+  useEffect(() => {
+    if (!lastSynced) return;
+    const stale = Date.now() - lastSynced.getTime() > 24 * 60 * 60 * 1000;
+    setShowStaleWarning(stale);
+  }, [lastSynced]);
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -2410,10 +2721,155 @@ export default function AnalyticsPage() {
               ))}
             </div>
 
+            {/* Account filter dropdown */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setAccountFilterOpen((o) => !o)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 12px",
+                  borderRadius: 999,
+                  background: selectedAccountIds.length > 0 ? "#3B82F6" : "var(--bg-subtle)",
+                  color: selectedAccountIds.length > 0 ? "#fff" : "var(--text-secondary)",
+                  border: "none",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <Filter size={11} />
+                {selectedAccountIds.length === 0
+                  ? "All Accounts"
+                  : `${selectedAccountIds.length} account${selectedAccountIds.length > 1 ? "s" : ""}`}
+                <ChevronDown size={11} />
+              </button>
+              {accountFilterOpen && accountsList.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    right: 0,
+                    zIndex: 50,
+                    background: "var(--bg-surface)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: 10,
+                    boxShadow: "var(--shadow-md)",
+                    minWidth: 220,
+                    padding: 8,
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px 8px", borderBottom: "1px solid var(--border-subtle)", marginBottom: 6 }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Filter by Account</span>
+                    {selectedAccountIds.length > 0 && (
+                      <button
+                        onClick={() => setSelectedAccountIds([])}
+                        style={{ fontSize: 11, color: "#3B82F6", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {accountsList.map((acct) => {
+                    const checked = selectedAccountIds.includes(acct.id);
+                    return (
+                      <button
+                        key={acct.id}
+                        onClick={() => {
+                          setSelectedAccountIds((prev) =>
+                            checked ? prev.filter((id) => id !== acct.id) : [...prev, acct.id]
+                          );
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          width: "100%",
+                          padding: "7px 8px",
+                          borderRadius: 6,
+                          background: checked ? "var(--accent-blue-light)" : "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        <div style={{
+                          width: 16, height: 16, borderRadius: 3,
+                          background: checked ? "#3B82F6" : "var(--bg-subtle)",
+                          border: checked ? "none" : "1px solid var(--border-default)",
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          {checked && <Check size={10} color="#fff" />}
+                        </div>
+                        <div style={{ width: 24, height: 24, borderRadius: "50%", background: acct.platform === "TIKTOK" ? "rgba(59,130,246,0.15)" : "rgba(168,85,247,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: acct.platform === "TIKTOK" ? "#3B82F6" : "#A855F7", flexShrink: 0 }}>
+                          {(acct.username ?? acct.displayName ?? "?")[0].toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            @{acct.username}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-tertiary)" }}>{acct.platform === "TIKTOK" ? "TikTok" : "Instagram"}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: 6, paddingTop: 6 }}>
+                    <button
+                      onClick={() => setAccountFilterOpen(false)}
+                      style={{ width: "100%", padding: "6px 8px", borderRadius: 6, background: "#3B82F6", color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Compare toggle */}
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>Compare</span>
+              <button
+                onClick={() => setCompareOn((c) => !c)}
+                style={{
+                  width: 34,
+                  height: 18,
+                  borderRadius: 999,
+                  background: compareOn ? "#3B82F6" : "var(--bg-subtle)",
+                  border: compareOn ? "none" : "1px solid var(--border-default)",
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "background 200ms",
+                  padding: 0,
+                }}
+                title="Compare to previous period"
+              >
+                <div style={{
+                  position: "absolute",
+                  top: 2,
+                  left: compareOn ? 16 : 2,
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  transition: "left 200ms",
+                }} />
+              </button>
+            </div>
+
             {/* Last synced */}
             {lastSynced && (
-              <span style={{ fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
-                Synced {lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              <span
+                style={{
+                  fontSize: 11,
+                  color: showStaleWarning ? "#F59E0B" : "var(--text-tertiary)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {showStaleWarning ? "⚠ " : ""}Synced {fmtAgo(lastSynced)}
               </span>
             )}
 
@@ -2446,21 +2902,55 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
+        {/* ── Stale Data Warning ──────────────────────────────────────────────── */}
+        {showStaleWarning && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 16px",
+            borderRadius: 8,
+            background: "rgba(245,158,11,0.1)",
+            border: "1px solid rgba(245,158,11,0.3)",
+            marginBottom: 20,
+          }}>
+            <AlertCircle size={15} style={{ color: "#F59E0B", flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: "#F59E0B", flex: 1 }}>
+              Analytics data may be outdated. Last synced {fmtAgo(lastSynced)}.
+            </span>
+            <button
+              onClick={handleSync}
+              style={{ fontSize: 12, color: "#F59E0B", background: "none", border: "none", cursor: "pointer", fontWeight: 600, textDecoration: "underline", padding: 0 }}
+            >
+              Sync Now
+            </button>
+            <button
+              onClick={() => setShowStaleWarning(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#F59E0B", display: "flex" }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {/* ── Tab Content ──────────────────────────────────────────────────── */}
 
         {activeTab === "overview" && (
           <div>
             {overviewError && <SectionError message={overviewError} onRetry={loadOverview} />}
             <RevenueFunnel data={overviewData} />
-            <OverviewStatCards data={overviewData} loading={overviewLoading} />
+            <OverviewStatCards data={overviewData} loading={overviewLoading} compareOn={compareOn} />
             <ViewsOverTimeChart data={overviewData} />
-            <EngagementBreakdownChart data={overviewData} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24, alignItems: "start" }}>
+              <div><EngagementBreakdownChart data={overviewData} /></div>
+              <div><PostingHeatmap data={overviewData} /></div>
+            </div>
             <TopClipsTable clips={overviewData?.topClips ?? []} />
           </div>
         )}
 
         {activeTab === "accounts" && (
-          <AccountsTab workspaceId={workspace.id} />
+          <AccountsTab workspaceId={workspace.id} timeRange={timeRange} />
         )}
 
         {activeTab === "clips" && (
