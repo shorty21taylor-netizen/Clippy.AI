@@ -66,6 +66,9 @@ interface OverviewData {
   totalSaves: number;
   engagementRate: number;
   totalClipsPosted: number;
+  leadsCount: number;
+  conversions: number;
+  estimatedRevenue: number;
   previousPeriod: {
     totalViews: number;
     totalLikes: number;
@@ -73,6 +76,8 @@ interface OverviewData {
     totalShares: number;
     engagementRate: number;
     totalClipsPosted: number;
+    leadsCount: number;
+    conversions: number;
   };
   trends: {
     views: number;
@@ -81,6 +86,8 @@ interface OverviewData {
     shares: number;
     engagementRate: number;
     clipsPosted: number;
+    leads: number;
+    conversions: number;
   };
   viewsOverTime: Array<{ date: string; tiktokViews: number; instagramViews: number }>;
   engagementBreakdown: { views: number; likes: number; comments: number; shares: number; saves: number };
@@ -561,9 +568,9 @@ function RevenuePipelineFunnel({
     { label: "CONTENT", value: data.totalClipsPosted, sublabel: "clips posted" },
     { label: "REACH", value: data.totalViews, sublabel: "total views" },
     { label: "ENGAGEMENT", value: totalEngagements, sublabel: "interactions" },
-    { label: "TRAFFIC", value: 0, sublabel: "page visits" },
-    { label: "LEADS", value: 0, sublabel: "new leads" },
-    { label: "CONVERSIONS", value: 0, sublabel: "sales" },
+    { label: "TRAFFIC", value: data.leadsCount > 0 ? Math.round(data.leadsCount * 13.8) : 0, sublabel: "est. page visits" },
+    { label: "LEADS", value: data.leadsCount, sublabel: "new leads" },
+    { label: "CONVERSIONS", value: data.conversions, sublabel: `$${data.estimatedRevenue >= 1000 ? (data.estimatedRevenue / 1000).toFixed(0) + "K" : data.estimatedRevenue}` },
   ];
 
   const blueToGreen = [
@@ -865,13 +872,13 @@ function OverviewTab({
           sparklineColor="#7C3AED"
         />
         <StatCard
-          icon={<Heart size={18} style={{ color: "var(--accent-blue)" }} />}
+          icon={<Users size={18} style={{ color: "var(--accent-blue)" }} />}
           iconColor="var(--accent-blue)"
           iconBg="var(--accent-blue-light)"
-          label="Total Likes"
-          value={fmt(data.totalLikes)}
-          trend={data.trends.likes}
-          prevValue={fmt(data.previousPeriod?.totalLikes ?? 0)}
+          label="New Leads"
+          value={fmt(data.leadsCount)}
+          trend={data.trends.leads}
+          prevValue={fmt(data.previousPeriod?.leadsCount ?? 0)}
           compareOn={compareOn}
           sparklineData={viewsSparkline}
           sparklineColor="#3B82F6"
@@ -889,16 +896,16 @@ function OverviewTab({
           sparklineColor="#10B981"
         />
         <StatCard
-          icon={<Share2 size={18} style={{ color: "var(--accent-amber)" }} />}
-          iconColor="var(--accent-amber)"
-          iconBg="var(--accent-amber-light)"
-          label="Shares + Saves"
-          value={fmt(data.totalShares + data.totalSaves)}
-          trend={data.trends.shares}
-          prevValue={fmt((data.previousPeriod?.totalShares ?? 0))}
+          icon={<DollarSign size={18} style={{ color: "#10B981" }} />}
+          iconColor="#10B981"
+          iconBg="rgba(16,185,129,0.1)"
+          label="Estimated Revenue"
+          value={fmtCurrency(data.estimatedRevenue)}
+          trend={data.trends.conversions}
+          prevValue={fmtCurrency(0)}
           compareOn={compareOn}
           sparklineData={viewsSparkline}
-          sparklineColor="#F59E0B"
+          sparklineColor="#10B981"
         />
       </div>
 

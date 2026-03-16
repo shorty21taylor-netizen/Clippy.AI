@@ -135,6 +135,58 @@ export async function GET(req: Request) {
   const currentStats = aggregateLogs(publishLogs);
   const prevStats = aggregateLogs(prevPublishLogs);
 
+  // ─── Workspace settings for deal values ──────────────────────────────────
+  const wsSettings = await db.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { challengeTicketPrice: true, coachingProgramPrice: true },
+  });
+  const coachingPrice = wsSettings?.coachingProgramPrice ?? 6000;
+  const challengePrice = wsSettings?.challengeTicketPrice ?? 197;
+
+  // ─── Leads & conversions for current period ───────────────────────────────
+  const leadsWhere = {
+    workspaceId,
+    ...(currentPeriodStart ? { submittedAt: { gte: currentPeriodStart } } : {}),
+  };
+  const leadsForPipeline = await db.lead.findMany({
+    where: leadsWhere,
+    select: {
+      id: true,
+      status: true,
+      funnel: { select: { title: true } },
+    },
+  });
+  const leadsCount = leadsForPipeline.length;
+  const conversions = leadsForPipeline.filter((l) => l.status === "CONVERTED").length;
+
+  // Estimate revenue: classify funnel as challenge vs coaching by title heuristic
+  let estimatedRevenue = 0;
+  for (const lead of leadsForPipeline) {
+    if (lead.status !== "CONVERTED") continue;
+    const title = (lead.funnel?.title ?? "").toLowerCase();
+    if (title.includes("challenge") || title.includes("ticket") || title.includes("bootcamp")) {
+      estimatedRevenue += challengePrice;
+    } else {
+      estimatedRevenue += coachingPrice;
+    }
+  }
+
+  // Previous period leads/conversions for trends
+  const prevLeadsCount = previousPeriodStart && previousPeriodEnd
+    ? await db.lead.count({
+        where: { workspaceId, submittedAt: { gte: previousPeriodStart, lt: previousPeriodEnd } },
+      })
+    : 0;
+  const prevConversions = previousPeriodStart && previousPeriodEnd
+    ? await db.lead.count({
+        where: {
+          workspaceId,
+          status: "CONVERTED",
+          submittedAt: { gte: previousPeriodStart, lt: previousPeriodEnd },
+        },
+      })
+    : 0;
+
   // Trend percentage helper
   function trendPct(current: number, previous: number): number {
     if (previous === 0) return current > 0 ? 100 : 0;
@@ -148,6 +200,8 @@ export async function GET(req: Request) {
     shares: trendPct(currentStats.totalShares, prevStats.totalShares),
     engagementRate: trendPct(currentStats.engagementRate, prevStats.engagementRate),
     clipsPosted: trendPct(currentStats.totalClipsPosted, prevStats.totalClipsPosted),
+    leads: trendPct(leadsCount, prevLeadsCount),
+    conversions: trendPct(conversions, prevConversions),
   };
 
   // Views over time — daily for 7d/30d, weekly for 90d/all
@@ -297,6 +351,9 @@ export async function GET(req: Request) {
   return NextResponse.json({
     timeRange,
     ...currentStats,
+    leadsCount,
+    conversions,
+    estimatedRevenue,
     previousPeriod: {
       totalViews: prevStats.totalViews,
       totalLikes: prevStats.totalLikes,
@@ -304,6 +361,8 @@ export async function GET(req: Request) {
       totalShares: prevStats.totalShares,
       engagementRate: prevStats.engagementRate,
       totalClipsPosted: prevStats.totalClipsPosted,
+      leadsCount: prevLeadsCount,
+      conversions: prevConversions,
     },
     trends,
     viewsOverTime,
@@ -319,8 +378,12 @@ export async function GET(req: Request) {
       timeRange,
       totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0, totalSaves: 0,
       engagementRate: 0, totalClipsPosted: 0,
-      previousPeriod: { totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0, engagementRate: 0, totalClipsPosted: 0 },
-      trends: { views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, clipsPosted: 0 },
+      leadsCount: 0, conversions: 0, estimatedRevenue: 0,
+      previousPeriod: {
+        totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0,
+        engagementRate: 0, totalClipsPosted: 0, leadsCount: 0, conversions: 0,
+      },
+      trends: { views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, clipsPosted: 0, leads: 0, conversions: 0 },
       viewsOverTime: [],
       engagementBreakdown: { views: 0, likes: 0, comments: 0, shares: 0, saves: 0 },
       platformSplit: { tiktok: { views: 0, percentage: 0 }, instagram: { views: 0, percentage: 0 } },
