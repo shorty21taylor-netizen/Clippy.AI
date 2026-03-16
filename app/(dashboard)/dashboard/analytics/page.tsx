@@ -2,19 +2,51 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
-  PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend
-} from "recharts";
-import {
-  TrendingUp, TrendingDown, RefreshCw, Eye, Heart, ArrowRight,
-  Users, DollarSign, BarChart2, Link, Zap, AlertCircle,
-  ChevronDown, ChevronUp, ExternalLink, Clock, Target
+  TrendingUp,
+  TrendingDown,
+  Eye,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  Users,
+  DollarSign,
+  Zap,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  ExternalLink,
+  AlertCircle,
+  BarChart2,
+  ArrowUpRight,
+  ArrowDownRight,
+  Star,
+  Activity,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { useWorkspace } from "@/lib/workspace-context";
 import { Topbar } from "@/components/layout/topbar";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Utility helpers ────────────────────────────────────────────────────────
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -25,133 +57,19 @@ function fmt(n: number): string {
 function fmtCurrency(n: number): string {
   if (n >= 1_000_000) return "$" + (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return "$" + (n / 1_000).toFixed(0) + "K";
-  return "$" + Math.round(n).toLocaleString();
+  return "$" + n.toLocaleString();
 }
 
-function fmtDate(s: string): string {
-  return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function fmtDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── Chart theme ─────────────────────────────────────────────────────────────
-
-const CHART_GRID = { strokeDasharray: "3 3", stroke: "rgba(0,0,0,0.06)" };
-const CHART_AXIS = { stroke: "#A1A1AA", tick: { fontSize: 11, fill: "#71717A" } };
-const CHART_TOOLTIP = {
-  contentStyle: {
-    background: "#FFFFFF",
-    border: "1px solid #E4E4E7",
-    borderRadius: 8,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    fontSize: 13,
-    color: "#09090B",
-  },
-};
-
-const COLORS = {
-  tiktok: "#3B82F6",
-  instagram: "#A855F7",
-  likes: "#3B82F6",
-  comments: "#22C55E",
-  shares: "#F59E0B",
-  saves: "#A855F7",
-  coaching: "#10B981",
-  challenge: "#3B82F6",
-};
-
-const PIE_COLORS = ["#3B82F6", "#A855F7", "#F59E0B", "#10B981"];
-
-// ─── Card shell ──────────────────────────────────────────────────────────────
-
-const CARD: React.CSSProperties = {
-  background: "var(--bg-surface)",
-  border: "1px solid var(--border-default)",
-  borderRadius: "var(--radius-md)",
-  boxShadow: "var(--shadow-sm)",
-  padding: "20px",
-};
-
-// ─── Skeleton ────────────────────────────────────────────────────────────────
-
-function Skel({ h = 20, w = "100%", r = 8 }: { h?: number; w?: number | string; r?: number }) {
-  return (
-    <div
-      className="skeleton"
-      style={{ height: h, width: w, borderRadius: r, minWidth: 0 }}
-    />
-  );
+function fmtPct(n: number): string {
+  return n.toFixed(2) + "%";
 }
 
-// ─── Stat card ───────────────────────────────────────────────────────────────
-
-interface StatCardProps {
-  label: string;
-  value: string;
-  trend?: number | null;
-  loading?: boolean;
-  orbColor?: string;
-  icon?: React.ReactNode;
-  valueColor?: string;
-}
-
-function StatCard({ label, value, trend, loading, orbColor, icon, valueColor }: StatCardProps) {
-  return (
-    <div
-      className="stat-card"
-      style={{ ...CARD, "--card-orb-color": orbColor } as React.CSSProperties}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)" }}>{label}</span>
-        {icon && <span style={{ color: "var(--text-tertiary)" }}>{icon}</span>}
-      </div>
-      {loading ? (
-        <Skel h={28} w="60%" />
-      ) : (
-        <div style={{ fontSize: 24, fontWeight: 700, color: valueColor || "var(--text-primary)", lineHeight: 1.2 }}>
-          {value}
-        </div>
-      )}
-      {trend != null && !loading && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 12 }}>
-          {trend >= 0 ? (
-            <TrendingUp size={13} style={{ color: "#10B981" }} />
-          ) : (
-            <TrendingDown size={13} style={{ color: "#F43F5E" }} />
-          )}
-          <span style={{ color: trend >= 0 ? "#10B981" : "#F43F5E", fontWeight: 600 }}>
-            {trend >= 0 ? "+" : ""}{trend}%
-          </span>
-          <span style={{ color: "var(--text-tertiary)" }}>vs prev period</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Empty state ─────────────────────────────────────────────────────────────
-
-function EmptyState({ message, sub }: { message: string; sub?: string }) {
-  return (
-    <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-secondary)" }}>
-      <BarChart2 size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-      <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>{message}</div>
-      {sub && <div style={{ fontSize: 13 }}>{sub}</div>}
-    </div>
-  );
-}
-
-// ─── Error banner ────────────────────────────────────────────────────────────
-
-function ErrorBanner({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "rgba(244,63,94,0.06)", border: "1px solid rgba(244,63,94,0.2)", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
-      <AlertCircle size={15} style={{ color: "#F43F5E", flexShrink: 0 }} />
-      <span style={{ color: "var(--text-primary)", flex: 1 }}>Failed to load analytics data.</span>
-      <button onClick={onRetry} style={{ color: "#3B82F6", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}>Retry</button>
-    </div>
-  );
-}
-
-// ─── API Types ────────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface OverviewData {
   totalViews: number;
@@ -161,22 +79,44 @@ interface OverviewData {
   totalSaves: number;
   engagementRate: number;
   totalClipsPosted: number;
-  trends: { views: number; likes: number; comments: number; shares: number; engagementRate: number; clipsPosted: number };
-  viewsOverTime: { date: string; tiktokViews: number; instagramViews: number }[];
+  trends: {
+    views: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    engagementRate: number;
+    clipsPosted: number;
+  };
+  viewsOverTime: Array<{ date: string; tiktokViews: number; instagramViews: number }>;
   engagementBreakdown: { views: number; likes: number; comments: number; shares: number; saves: number };
-  platformSplit: { tiktok: { views: number; percentage: number }; instagram: { views: number; percentage: number } };
-  topClips: { clipId: string; title: string; viralityScore: number; totalViews: number; totalLikes: number; totalComments: number; engagementRate: number; platforms: string[] }[];
+  platformSplit: {
+    tiktok: { views: number; percentage: number };
+    instagram: { views: number; percentage: number };
+  };
+  topClips: Array<{
+    clipId: string;
+    title: string;
+    thumbnailPath: string;
+    viralityScore: number;
+    totalViews: number;
+    totalLikes: number;
+    totalComments: number;
+    totalShares: number;
+    engagementRate: number;
+    platforms: string[];
+    publishedAt: string;
+  }>;
 }
 
-interface AccountItem {
+interface AccountData {
   id: string;
   platform: string;
   username: string;
-  displayName: string | null;
-  avatarUrl: string | null;
+  displayName: string;
+  avatarUrl: string;
   followerCount: number;
   status: string;
-  lastSyncedAt: string | null;
+  lastSyncedAt: string;
   publishedPostsCount: number;
   avgViews: number;
   avgEngagement: number;
@@ -184,35 +124,73 @@ interface AccountItem {
 }
 
 interface AccountDetail {
-  account: { id: string; platform: string; username: string; displayName: string | null; avatarUrl: string | null; followerCount: number; lastSyncedAt: string | null };
+  account: {
+    id: string;
+    platform: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string;
+    followerCount: number;
+    lastSyncedAt: string;
+    isActive: boolean;
+  };
   totals: { views: number; likes: number; comments: number; shares: number; saves: number; posts: number };
-  posts: { publishLogId: string; clip: { id: string; title: string } | null; publishedAt: string | null; metrics: { views: number; likes: number; comments: number; shares: number; saves: number; engagementRate: number } | null }[];
+  posts: Array<{
+    publishLogId: string;
+    clip: { id: string; title: string; viralityScore: number };
+    publishedAt: string;
+    platformPostId: string;
+    metrics: { views: number; likes: number; comments: number; shares: number; saves: number; engagementRate: number } | null;
+  }>;
 }
 
-interface ClipItem {
+interface ClipData {
   id: string;
   title: string;
-  thumbnailPath: string | null;
+  thumbnailPath: string;
   viralityScore: number;
   clipType: string;
   status: string;
+  sourceVideoId: string;
   sourceVideoTitle: string;
   accountsPostedTo: { tiktok: number; instagram: number; total: number };
   totalViews: number;
   totalLikes: number;
   totalComments: number;
   totalShares: number;
+  totalSaves: number;
   avgEngRate: number;
-  perAccountBreakdown: { accountId: string; handle: string; platform: string | null; views: number; likes: number; comments: number; shares: number; engRate: number; postedAt: string | null }[];
+  perAccountBreakdown: Array<{
+    accountId: string;
+    handle: string;
+    platform: string;
+    views: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    engRate: number;
+    postedAt: string;
+  }>;
 }
 
 interface LeadsData {
   stats: { totalLeads: number; leadsPerDay: number; topSource: string; leadToSaleRate: number };
-  leadsOverTime: { date: string; count: number }[];
-  leadsByFunnel: { funnelId: string; funnelName: string; count: number }[];
+  leadsOverTime: Array<{ date: string; count: number }>;
+  leadsByFunnel: Array<{ funnelId: string; funnelName: string; count: number }>;
   leadsBySource: { direct: number; tiktok: number; instagram: number; other: number };
   statusPipeline: { new: number; contacted: number; qualified: number; converted: number; lost: number };
-  recentLeads: { id: string; name: string | null; email: string | null; funnel: string; source: string; status: string; createdAt: string; daysSince: number }[];
+  recentLeads: Array<{
+    id: string;
+    name: string;
+    email: string;
+    funnel: string;
+    funnelId: string;
+    source: string;
+    status: string;
+    createdAt: string;
+    daysSince: number;
+  }>;
 }
 
 interface RevenueData {
@@ -220,993 +198,91 @@ interface RevenueData {
   revenueByProduct: { challenge: number; coaching: number };
   challengePrice: number;
   coachingPrice: number;
-  revenueOverTime: { month: string; challengeRevenue: number; coachingRevenue: number }[];
-  revenueByFunnel: { funnelId: string; name: string; type: string; leads: number; conversions: number; convRate: number; revenue: number }[];
-  clipAttribution: { clipId: string; title: string; views: number; leadsGenerated: number; conversions: number; revenue: number }[];
+  revenueOverTime: Array<{ month: string; challengeRevenue: number; coachingRevenue: number }>;
+  revenueByFunnel: Array<{ funnelId: string; name: string; type: string; leads: number; conversions: number; convRate: number; revenue: number }>;
+  clipAttribution: Array<{ clipId: string; title: string; views: number; leadsGenerated: number; conversions: number; revenue: number }>;
   projection: { monthlyLeads: number; convRate: number; projectedMonthly: number };
   hasData: boolean;
 }
 
 
-// ─── Revenue Pipeline Funnel ─────────────────────────────────────────────────
+// ─── Shared chart styling ────────────────────────────────────────────────────
 
-function RevenuePipeline({ data, loading }: { data: OverviewData | null; loading: boolean }) {
-  const stages = data ? [
-    { label: "Clips Posted", value: data.totalClipsPosted, color: "#6366F1" },
-    { label: "Total Views", value: data.totalViews, color: "#3B82F6" },
-    { label: "Engagements", value: data.totalLikes + data.totalComments + data.totalShares, color: "#06B6D4" },
-    { label: "Landing Visits", value: Math.round(data.totalViews * 0.004), color: "#10B981" },
-    { label: "New Leads", value: 0, color: "#22C55E" },
-    { label: "Conversions", value: 0, color: "#16A34A" },
-  ] : [];
+const CHART_GRID = <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />;
 
+const TOOLTIP_STYLE = {
+  contentStyle: {
+    background: "#FFFFFF",
+    border: "1px solid #E4E4E7",
+    borderRadius: 8,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    fontSize: 13,
+  },
+};
+
+const CARD_STYLE: React.CSSProperties = {
+  background: "var(--bg-surface)",
+  border: "1px solid var(--border-default)",
+  borderRadius: "var(--radius-md)",
+  boxShadow: "var(--shadow-sm)",
+};
+
+const COLORS = {
+  tiktok: "#3B82F6",
+  instagram: "#A855F7",
+  likes: "#3B82F6",
+  comments: "#22C55E",
+  shares: "#F59E0B",
+  saves: "#A855F7",
+  revenue: "#10B981",
+  challenge: "#3B82F6",
+  coaching: "#10B981",
+  leads: "#F59E0B",
+};
+
+const PIE_COLORS = ["#3B82F6", "#A855F7", "#F59E0B", "#10B981"];
+
+// ─── Small sub-components ────────────────────────────────────────────────────
+
+function SkeletonBlock({ height = 20, width = "100%" }: { height?: number; width?: string | number }) {
   return (
-    <div style={{ ...CARD, marginBottom: 20 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>
-        Revenue Pipeline
-      </div>
-      {loading ? (
-        <div style={{ display: "flex", gap: 8 }}>
-          {[...Array(6)].map((_, i) => <Skel key={i} h={80} />)}
-        </div>
-      ) : !data || stages.every(s => s.value === 0) ? (
-        <EmptyState message="No pipeline data yet" sub="Post clips to start tracking your revenue pipeline" />
-      ) : (
-        <>
-          <div style={{ display: "flex", gap: 0, alignItems: "stretch", height: 100, borderRadius: 8, overflow: "hidden" }}>
-            {stages.map((stage, i) => {
-              const pct = stages[0].value > 0 ? (stage.value / stages[0].value) : 0;
-              const heightPct = 40 + pct * 60;
-              return (
-                <div
-                  key={i}
-                  title={`${stage.label}: ${fmt(stage.value)}`}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    padding: "6px 4px",
-                    background: `linear-gradient(to top, ${stage.color}22, ${stage.color}08)`,
-                    borderLeft: i > 0 ? "1px solid rgba(0,0,0,0.04)" : undefined,
-                    cursor: "default",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "80%",
-                      height: `${heightPct}%`,
-                      background: stage.color,
-                      borderRadius: "4px 4px 0 0",
-                      opacity: 0.8,
-                      marginBottom: 4,
-                      minHeight: 8,
-                    }}
-                  />
-                  <div style={{ fontSize: 11, fontWeight: 700, color: stage.color }}>{fmt(stage.value)}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", lineHeight: 1.2 }}>{stage.label}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 12, color: "var(--text-secondary)", flexWrap: "wrap" }}>
-            {stages[0].value > 0 && stages[2].value > 0 && (
-              <span>Views→Engagement: <strong style={{ color: "var(--text-primary)" }}>{((stages[2].value / stages[1].value) * 100).toFixed(1)}%</strong></span>
-            )}
-            {stages[1].value > 0 && stages[3].value > 0 && (
-              <span>Views→Traffic: <strong style={{ color: "var(--text-primary)" }}>{((stages[3].value / stages[1].value) * 100).toFixed(1)}%</strong></span>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+    <div
+      className="skeleton"
+      style={{ height, width, borderRadius: 6 }}
+    />
   );
 }
 
-// ─── Overview Tab ────────────────────────────────────────────────────────────
-
-function OverviewTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(false);
-    try {
-      const res = await fetch(`/api/analytics/overview?workspaceId=${workspaceId}&timeRange=${timeRange}`);
-      if (!res.ok) throw new Error();
-      setData(await res.json());
-    } catch { setError(true); }
-    finally { setLoading(false); }
-  }, [workspaceId, timeRange]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const totalEngagements = data ? data.totalLikes + data.totalComments + data.totalShares + data.totalSaves : 0;
-
-  const pieData = data ? [
-    { name: "TikTok", value: data.platformSplit.tiktok.views },
-    { name: "Instagram", value: data.platformSplit.instagram.views },
-  ] : [];
-
-  const engBreakdown = data ? [
-    { name: "Likes", value: data.engagementBreakdown.likes },
-    { name: "Comments", value: data.engagementBreakdown.comments },
-    { name: "Shares", value: data.engagementBreakdown.shares },
-    { name: "Saves", value: data.engagementBreakdown.saves },
-  ] : [];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {error && <ErrorBanner onRetry={load} />}
-
-      {/* Revenue Pipeline */}
-      <RevenuePipeline data={data} loading={loading} />
-
-      {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
-        <StatCard label="Total Views" value={loading ? "—" : fmt(data?.totalViews ?? 0)} trend={data?.trends.views} loading={loading} orbColor="rgba(59,130,246,0.08)" icon={<Eye size={15} />} />
-        <StatCard label="Engagement Rate" value={loading ? "—" : `${data?.engagementRate ?? 0}%`} trend={data?.trends.engagementRate} loading={loading} orbColor="rgba(124,58,237,0.08)" icon={<Heart size={15} />} />
-        <StatCard label="Total Engagements" value={loading ? "—" : fmt(totalEngagements)} trend={data?.trends.likes} loading={loading} orbColor="rgba(6,182,212,0.08)" icon={<Zap size={15} />} />
-        <StatCard label="Clips Posted" value={loading ? "—" : String(data?.totalClipsPosted ?? 0)} trend={data?.trends.clipsPosted} loading={loading} orbColor="rgba(16,185,129,0.08)" icon={<BarChart2 size={15} />} />
-        <StatCard label="TikTok Views" value={loading ? "—" : fmt(data?.platformSplit.tiktok.views ?? 0)} loading={loading} orbColor="rgba(59,130,246,0.08)" icon={<TrendingUp size={15} />} />
-        <StatCard label="Instagram Views" value={loading ? "—" : fmt(data?.platformSplit.instagram.views ?? 0)} loading={loading} orbColor="rgba(168,85,247,0.08)" icon={<TrendingUp size={15} />} />
-      </div>
-
-      {/* Views over time */}
-      <div style={CARD}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Views Over Time</div>
-        {loading ? <Skel h={220} /> : !data || data.viewsOverTime.length === 0 ? (
-          <EmptyState message="No views data yet" sub="Publish clips to start tracking views" />
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={data.viewsOverTime}>
-              <defs>
-                <linearGradient id="tiktokG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="igG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#A855F7" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#A855F7" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...CHART_GRID} />
-              <XAxis dataKey="date" {...CHART_AXIS} tickFormatter={fmtDate} />
-              <YAxis {...CHART_AXIS} tickFormatter={fmt} />
-              <Tooltip {...CHART_TOOLTIP} formatter={(v) => [fmt(Number(v ?? 0)), ""]} labelFormatter={(s) => fmtDate(String(s))} />
-              <Legend />
-              <Area type="monotone" dataKey="tiktokViews" name="TikTok" stroke={COLORS.tiktok} fill="url(#tiktokG)" strokeWidth={2} isAnimationActive={false} />
-              <Area type="monotone" dataKey="instagramViews" name="Instagram" stroke={COLORS.instagram} fill="url(#igG)" strokeWidth={2} isAnimationActive={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Engagement breakdown + Platform split */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div style={CARD}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Engagement Breakdown</div>
-          {loading ? <Skel h={200} /> : engBreakdown.every(e => e.value === 0) ? (
-            <EmptyState message="No engagement data" />
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={engBreakdown}>
-                <CartesianGrid {...CHART_GRID} />
-                <XAxis dataKey="name" {...CHART_AXIS} />
-                <YAxis {...CHART_AXIS} tickFormatter={fmt} />
-                <Tooltip {...CHART_TOOLTIP} formatter={(v) => [fmt(Number(v ?? 0)), ""]} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                  {engBreakdown.map((_, i) => (
-                    <Cell key={i} fill={[COLORS.likes, COLORS.comments, COLORS.shares, COLORS.saves][i]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        <div style={CARD}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Platform Split</div>
-          {loading ? <Skel h={200} /> : pieData.every(p => p.value === 0) ? (
-            <EmptyState message="No platform data" />
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name" isAnimationActive={false} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
-                  <Cell fill={COLORS.tiktok} />
-                  <Cell fill={COLORS.instagram} />
-                </Pie>
-                <Tooltip {...CHART_TOOLTIP} formatter={(v) => [fmt(Number(v ?? 0)), "Views"]} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Top clips */}
-      <div style={CARD}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Top Clips This Period</div>
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...Array(5)].map((_, i) => <Skel key={i} h={36} />)}
-          </div>
-        ) : !data || data.topClips.length === 0 ? (
-          <EmptyState message="No clip data yet" sub="Publish clips to see performance rankings" />
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                {["Title", "Virality", "Views", "Likes", "Comments", "Eng Rate", "Platforms"].map(h => (
-                  <th key={h} style={{ padding: "6px 8px", textAlign: "left", fontWeight: 500, color: "var(--text-secondary)", fontSize: 11 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.topClips.slice(0, 5).map(clip => (
-                <tr key={clip.clipId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  <td style={{ padding: "8px", maxWidth: 200 }}>
-                    <div style={{ fontWeight: 500, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clip.title}</div>
-                  </td>
-                  <td style={{ padding: "8px" }}>
-                    <span style={{ background: clip.viralityScore >= 8 ? "rgba(16,185,129,0.1)" : "rgba(59,130,246,0.1)", color: clip.viralityScore >= 8 ? "#10B981" : "#3B82F6", borderRadius: 6, padding: "2px 7px", fontWeight: 600, fontSize: 12 }}>{clip.viralityScore}/10</span>
-                  </td>
-                  <td style={{ padding: "8px", fontWeight: 600 }}>{fmt(clip.totalViews)}</td>
-                  <td style={{ padding: "8px" }}>{fmt(clip.totalLikes)}</td>
-                  <td style={{ padding: "8px" }}>{fmt(clip.totalComments)}</td>
-                  <td style={{ padding: "8px" }}>{clip.engagementRate}%</td>
-                  <td style={{ padding: "8px", fontSize: 11 }}>{clip.platforms.join(", ")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-// ─── Accounts Tab ────────────────────────────────────────────────────────────
-
-function AccountsTab({ workspaceId }: { workspaceId: string }) {
-  const [accounts, setAccounts] = useState<AccountItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<AccountDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(false);
-    try {
-      const res = await fetch(`/api/analytics/accounts?workspaceId=${workspaceId}`);
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      setAccounts(json.accounts ?? []);
-    } catch { setError(true); }
-    finally { setLoading(false); }
-  }, [workspaceId]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const openDetail = async (id: string) => {
-    if (selectedId === id) { setSelectedId(null); setDetail(null); return; }
-    setSelectedId(id); setDetailLoading(true);
-    try {
-      const res = await fetch(`/api/analytics/accounts/${id}`);
-      if (res.ok) setDetail(await res.json());
-    } catch { /* ignore */ }
-    finally { setDetailLoading(false); }
-  };
-
-  const platformColor = (p: string) => p === "TIKTOK" ? "#3B82F6" : "#A855F7";
-  const initials = (a: AccountItem) => (a.displayName || a.username || "?").slice(0, 2).toUpperCase();
-
-  if (error) return <ErrorBanner onRetry={load} />;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 16 }}>
-          {[...Array(6)].map((_, i) => <Skel key={i} h={180} />)}
-        </div>
-      ) : accounts.length === 0 ? (
-        <EmptyState message="No accounts connected" sub="Connect social accounts to see analytics" />
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: 16 }}>
-            {accounts.map(acct => (
-              <div
-                key={acct.id}
-                style={{ ...CARD, borderLeft: `3px solid ${platformColor(acct.platform)}`, cursor: "pointer", transition: "box-shadow 150ms" }}
-                onClick={() => openDetail(acct.id)}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  {acct.avatarUrl ? (
-                    <img src={acct.avatarUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${platformColor(acct.platform)}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: platformColor(acct.platform) }}>{initials(acct)}</div>
-                  )}
-                  <div>
-                    <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>@{acct.username}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{acct.platform}</div>
-                  </div>
-                  <div style={{ marginLeft: "auto" }}>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: acct.status === "ACTIVE" ? "#10B981" : "#A1A1AA", display: "inline-block" }} />
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12 }}>
-                  <div><div style={{ color: "var(--text-tertiary)" }}>Followers</div><div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{fmt(acct.followerCount)}</div></div>
-                  <div><div style={{ color: "var(--text-tertiary)" }}>Posts</div><div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{acct.publishedPostsCount}</div></div>
-                  <div><div style={{ color: "var(--text-tertiary)" }}>Avg Views</div><div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{fmt(acct.avgViews)}</div></div>
-                  <div><div style={{ color: "var(--text-tertiary)" }}>Avg Eng.</div><div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{acct.avgEngagement}%</div></div>
-                </div>
-                {acct.recentViews.length > 0 && (
-                  <div style={{ marginTop: 12, display: "flex", alignItems: "flex-end", gap: 3, height: 30 }}>
-                    {acct.recentViews.map((v, i) => {
-                      const max = Math.max(...acct.recentViews, 1);
-                      return (
-                        <div key={i} style={{ flex: 1, background: `${platformColor(acct.platform)}50`, borderRadius: "2px 2px 0 0", height: `${Math.max((v / max) * 100, 8)}%` }} />
-                      );
-                    })}
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginTop: 10, gap: 4, fontSize: 12, color: platformColor(acct.platform), fontWeight: 500 }}>
-                  View Details {selectedId === acct.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Detail panel */}
-          {selectedId && (
-            <div style={CARD}>
-              {detailLoading ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <Skel h={24} w="40%" />
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
-                    {[...Array(4)].map((_, i) => <Skel key={i} h={70} />)}
-                  </div>
-                  <Skel h={200} />
-                </div>
-              ) : detail ? (
-                <>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text-primary)" }}>@{detail.account.username}</div>
-                    <span style={{ fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-subtle)", borderRadius: 6, padding: "2px 8px" }}>{detail.account.platform}</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 12, marginBottom: 20 }}>
-                    <StatCard label="Total Views" value={fmt(detail.totals.views)} />
-                    <StatCard label="Total Likes" value={fmt(detail.totals.likes)} />
-                    <StatCard label="Comments" value={fmt(detail.totals.comments)} />
-                    <StatCard label="Posts" value={String(detail.totals.posts)} />
-                  </div>
-                  {detail.posts.length > 0 && (
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                            {["Clip Title", "Posted", "Views", "Likes", "Comments", "Eng Rate"].map(h => (
-                              <th key={h} style={{ padding: "6px 8px", textAlign: "left", fontWeight: 500, color: "var(--text-secondary)", fontSize: 11 }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {detail.posts.map(post => (
-                            <tr key={post.publishLogId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                              <td style={{ padding: "8px", maxWidth: 200 }}>
-                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)", fontWeight: 500 }}>{post.clip?.title ?? "—"}</div>
-                              </td>
-                              <td style={{ padding: "8px", color: "var(--text-secondary)" }}>{post.publishedAt ? fmtDate(post.publishedAt) : "—"}</td>
-                              <td style={{ padding: "8px", fontWeight: 600 }}>{fmt(post.metrics?.views ?? 0)}</td>
-                              <td style={{ padding: "8px" }}>{fmt(post.metrics?.likes ?? 0)}</td>
-                              <td style={{ padding: "8px" }}>{fmt(post.metrics?.comments ?? 0)}</td>
-                              <td style={{ padding: "8px" }}>{post.metrics?.engagementRate ?? 0}%</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </>
-              ) : null}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Clips Tab ───────────────────────────────────────────────────────────────
-
-function ClipsTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
-  const [clips, setClips] = useState<ClipItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [sortBy, setSortBy] = useState("totalViews");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(false);
-    try {
-      const res = await fetch(`/api/analytics/clips?workspaceId=${workspaceId}&timeRange=${timeRange}&sortBy=${sortBy}`);
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      setClips(json.clips ?? []);
-    } catch { setError(true); }
-    finally { setLoading(false); }
-  }, [workspaceId, timeRange, sortBy]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const clipTypeColor = (t: string) => {
-    const map: Record<string, string> = { HOT_TAKE: "#F59E0B", EMOTIONAL: "#F43F5E", QUOTABLE: "#3B82F6", STORY: "#A855F7", REVEAL: "#06B6D4", RELATABLE: "#10B981" };
-    return map[t] ?? "#71717A";
-  };
-
-  if (error) return <ErrorBanner onRetry={load} />;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Sort by:</span>
-        {["totalViews", "engagementRate", "viralityScore"].map(s => (
-          <button
-            key={s}
-            onClick={() => setSortBy(s)}
-            style={{ padding: "4px 12px", borderRadius: 20, border: "1px solid", fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 150ms", borderColor: sortBy === s ? "#3B82F6" : "var(--border-default)", background: sortBy === s ? "#3B82F6" : "transparent", color: sortBy === s ? "#fff" : "var(--text-secondary)" }}
-          >
-            {s === "totalViews" ? "Views" : s === "engagementRate" ? "Engagement" : "Virality"}
-          </button>
-        ))}
-      </div>
-      {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[...Array(8)].map((_, i) => <Skel key={i} h={44} />)}
-        </div>
-      ) : clips.length === 0 ? (
-        <EmptyState message="No clips found" sub="Publish clips to see performance analytics" />
-      ) : (
-        <div style={{ ...CARD, padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-default)", background: "var(--bg-subtle)" }}>
-                {["Title", "Source Video", "Type", "Virality", "Accounts", "Views", "Eng Rate", "Status"].map(h => (
-                  <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontWeight: 500, color: "var(--text-secondary)", fontSize: 11, whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {clips.map(clip => (
-                <React.Fragment key={clip.id}>
-                  <tr
-                    style={{ borderBottom: expandedId === clip.id ? "none" : "1px solid var(--border-subtle)", cursor: "pointer", background: expandedId === clip.id ? "var(--bg-subtle)" : "transparent" }}
-                    onClick={() => setExpandedId(expandedId === clip.id ? null : clip.id)}
-                  >
-                    <td style={{ padding: "10px 12px", maxWidth: 180 }}>
-                      <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clip.title}</div>
-                    </td>
-                    <td style={{ padding: "10px 12px", maxWidth: 140, color: "var(--text-secondary)" }}>
-                      <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clip.sourceVideoTitle}</div>
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <span style={{ background: `${clipTypeColor(clip.clipType)}15`, color: clipTypeColor(clip.clipType), borderRadius: 6, padding: "2px 7px", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{clip.clipType.replace("_", " ")}</span>
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <span style={{ background: "rgba(59,130,246,0.1)", color: "#3B82F6", borderRadius: 6, padding: "2px 7px", fontWeight: 700, fontSize: 12 }}>{clip.viralityScore}/10</span>
-                    </td>
-                    <td style={{ padding: "10px 12px", color: "var(--text-secondary)", fontSize: 12 }}>
-                      {clip.accountsPostedTo.tiktok > 0 && <span style={{ marginRight: 4 }}>TT:{clip.accountsPostedTo.tiktok}</span>}
-                      {clip.accountsPostedTo.instagram > 0 && <span>IG:{clip.accountsPostedTo.instagram}</span>}
-                      {clip.accountsPostedTo.total === 0 && "—"}
-                    </td>
-                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>{fmt(clip.totalViews)}</td>
-                    <td style={{ padding: "10px 12px" }}>{clip.avgEngRate}%</td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, background: clip.status === "PUBLISHED" ? "rgba(16,185,129,0.1)" : "rgba(161,161,170,0.1)", color: clip.status === "PUBLISHED" ? "#10B981" : "#71717A", fontWeight: 500 }}>{clip.status}</span>
-                    </td>
-                  </tr>
-                  {expandedId === clip.id && clip.perAccountBreakdown.length > 0 && (
-                    <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td colSpan={8} style={{ padding: "0 12px 12px", background: "var(--bg-subtle)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8, paddingTop: 8 }}>Per-Account Breakdown</div>
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                          <thead>
-                            <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                              {["Account", "Platform", "Views", "Likes", "Comments", "Eng Rate", "Posted"].map(h => (
-                                <th key={h} style={{ padding: "4px 8px", textAlign: "left", fontWeight: 500, color: "var(--text-tertiary)", fontSize: 11 }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {clip.perAccountBreakdown.map(row => (
-                              <tr key={row.accountId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                                <td style={{ padding: "5px 8px", fontWeight: 500 }}>@{row.handle}</td>
-                                <td style={{ padding: "5px 8px", color: row.platform === "TIKTOK" ? COLORS.tiktok : COLORS.instagram, fontSize: 11 }}>{row.platform}</td>
-                                <td style={{ padding: "5px 8px", fontWeight: 600 }}>{fmt(row.views)}</td>
-                                <td style={{ padding: "5px 8px" }}>{fmt(row.likes)}</td>
-                                <td style={{ padding: "5px 8px" }}>{fmt(row.comments)}</td>
-                                <td style={{ padding: "5px 8px" }}>{row.engRate}%</td>
-                                <td style={{ padding: "5px 8px", color: "var(--text-tertiary)" }}>{row.postedAt ? fmtDate(row.postedAt) : "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-// ─── Leads Tab ───────────────────────────────────────────────────────────────
-
-function LeadsTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
-  const [data, setData] = useState<LeadsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(false);
-    try {
-      const res = await fetch(`/api/analytics/leads?workspaceId=${workspaceId}&timeRange=${timeRange}`);
-      if (!res.ok) throw new Error();
-      setData(await res.json());
-    } catch { setError(true); }
-    finally { setLoading(false); }
-  }, [workspaceId, timeRange]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const statusColor = (s: string) => {
-    const m: Record<string, string> = { NEW: "#3B82F6", CONTACTED: "#F59E0B", QUALIFIED: "#A855F7", CONVERTED: "#10B981", LOST: "#F43F5E" };
-    return m[s] ?? "#71717A";
-  };
-
-  const pipelineStages: { key: keyof LeadsData["statusPipeline"]; label: string }[] = [
-    { key: "new", label: "New" },
-    { key: "contacted", label: "Contacted" },
-    { key: "qualified", label: "Qualified" },
-    { key: "converted", label: "Converted" },
-    { key: "lost", label: "Lost" },
-  ];
-
-  const sourceData = data ? [
-    { name: "Direct", value: data.leadsBySource.direct },
-    { name: "TikTok", value: data.leadsBySource.tiktok },
-    { name: "Instagram", value: data.leadsBySource.instagram },
-    { name: "Other", value: data.leadsBySource.other },
-  ] : [];
-
-  if (error) return <ErrorBanner onRetry={load} />;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 12 }}>
-        <StatCard label="Total Leads" value={loading ? "—" : String(data?.stats.totalLeads ?? 0)} loading={loading} orbColor="rgba(59,130,246,0.08)" icon={<Users size={15} />} />
-        <StatCard label="Leads/Day" value={loading ? "—" : String(data?.stats.leadsPerDay ?? 0)} loading={loading} orbColor="rgba(16,185,129,0.08)" icon={<TrendingUp size={15} />} />
-        <StatCard label="Top Source" value={loading ? "—" : (data?.stats.topSource ?? "—")} loading={loading} orbColor="rgba(245,158,11,0.08)" icon={<Link size={15} />} />
-        <StatCard label="Lead→Sale Rate" value={loading ? "—" : `${data?.stats.leadToSaleRate ?? 0}%`} loading={loading} orbColor="rgba(16,185,129,0.08)" icon={<Target size={15} />} valueColor="#10B981" />
-      </div>
-
-      {/* Leads over time */}
-      <div style={CARD}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Leads Over Time</div>
-        {loading ? <Skel h={200} /> : !data || data.leadsOverTime.length === 0 ? (
-          <EmptyState message="No leads data yet" sub="Launch a funnel to start capturing leads" />
-        ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={data.leadsOverTime}>
-              <defs>
-                <linearGradient id="leadsG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...CHART_GRID} />
-              <XAxis dataKey="date" {...CHART_AXIS} tickFormatter={fmtDate} />
-              <YAxis {...CHART_AXIS} allowDecimals={false} />
-              <Tooltip {...CHART_TOOLTIP} labelFormatter={(s) => fmtDate(String(s))} />
-              <Area type="monotone" dataKey="count" name="Leads" stroke="#3B82F6" fill="url(#leadsG)" strokeWidth={2} isAnimationActive={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Funnel breakdown + source donut */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div style={CARD}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Leads by Funnel</div>
-          {loading ? <Skel h={200} /> : !data || data.leadsByFunnel.length === 0 ? (
-            <EmptyState message="No funnel data" />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {data.leadsByFunnel.slice(0, 8).map(f => {
-                const max = data.leadsByFunnel[0].count;
-                return (
-                  <div key={f.funnelId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ flex: 1, fontSize: 12, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 80 }}>{f.funnelName}</div>
-                    <div style={{ flex: 2, height: 8, background: "var(--bg-subtle)", borderRadius: 4, overflow: "hidden" }}>
-                      <div style={{ width: `${(f.count / max) * 100}%`, height: "100%", background: "#3B82F6", borderRadius: 4 }} />
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", minWidth: 28, textAlign: "right" }}>{f.count}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div style={CARD}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Lead Sources</div>
-          {loading ? <Skel h={200} /> : !data || sourceData.every(s => s.value === 0) ? (
-            <EmptyState message="No source data" />
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={sourceData.filter(s => s.value > 0)} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" nameKey="name" isAnimationActive={false} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
-                  {sourceData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip {...CHART_TOOLTIP} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Status pipeline */}
-      <div style={CARD}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Lead Status Pipeline</div>
-        {loading ? <Skel h={60} /> : !data ? null : (
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {pipelineStages.map((stage, i) => {
-              const count = data.statusPipeline[stage.key];
-              const color = statusColor(stage.key.toUpperCase());
-              return (
-                <React.Fragment key={stage.key}>
-                  <div style={{ flex: 1, background: `${color}15`, border: `1px solid ${color}30`, borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color }}>{count}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>{stage.label}</div>
-                  </div>
-                  {i < pipelineStages.length - 1 && (
-                    <span style={{ color: "var(--text-tertiary)", fontSize: 16 }}>→</span>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Recent leads */}
-      <div style={CARD}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Recent Leads</div>
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...Array(5)].map((_, i) => <Skel key={i} h={36} />)}
-          </div>
-        ) : !data || data.recentLeads.length === 0 ? (
-          <EmptyState message="No leads yet" sub="Launch a funnel to start capturing leads" />
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                  {["Name", "Email", "Funnel", "Source", "Status", "Days Since"].map(h => (
-                    <th key={h} style={{ padding: "6px 8px", textAlign: "left", fontWeight: 500, color: "var(--text-secondary)", fontSize: 11 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.recentLeads.slice(0, 20).map(lead => {
-                  const isUrgent = lead.status === "NEW" && lead.daysSince > 2;
-                  return (
-                    <tr key={lead.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td style={{ padding: "8px" }}>{lead.name ?? "—"}</td>
-                      <td style={{ padding: "8px", color: "var(--text-secondary)" }}>{lead.email ?? "—"}</td>
-                      <td style={{ padding: "8px", maxWidth: 140 }}><div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lead.funnel}</div></td>
-                      <td style={{ padding: "8px", color: "var(--text-secondary)" }}>{lead.source}</td>
-                      <td style={{ padding: "8px" }}>
-                        <span style={{ background: `${statusColor(lead.status)}15`, color: statusColor(lead.status), borderRadius: 6, padding: "2px 7px", fontWeight: 600, fontSize: 11 }}>{lead.status}</span>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <span style={{ color: isUrgent ? "#F43F5E" : "var(--text-secondary)", fontWeight: isUrgent ? 600 : 400, display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-                          {isUrgent && <Clock size={12} />}
-                          {lead.daysSince}d ago
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-// ─── Revenue Tab ─────────────────────────────────────────────────────────────
-
-function RevenueTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
-  const [data, setData] = useState<RevenueData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [challengePrice, setChallengePrice] = useState(197);
-  const [coachingPrice, setCoachingPrice] = useState(6000);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(false);
-    try {
-      const res = await fetch(`/api/analytics/revenue?workspaceId=${workspaceId}&timeRange=${timeRange}`);
-      if (!res.ok) throw new Error();
-      const json: RevenueData = await res.json();
-      setData(json);
-      setChallengePrice(json.challengePrice);
-      setCoachingPrice(json.coachingPrice);
-    } catch { setError(true); }
-    finally { setLoading(false); }
-  }, [workspaceId, timeRange]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const saveSettings = async () => {
-    setSavingSettings(true);
-    try {
-      await fetch(`/api/workspaces/${workspaceId}/settings`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ challengeTicketPrice: challengePrice, coachingProgramPrice: coachingPrice }),
-      });
-      await load();
-    } catch { /* ignore */ }
-    finally { setSavingSettings(false); }
-  };
-
-  if (error) return <ErrorBanner onRetry={load} />;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Settings card */}
-      <div style={CARD}>
-        <button
-          onClick={() => setSettingsOpen(v => !v)}
-          style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}
-        >
-          <DollarSign size={15} style={{ color: "#10B981" }} />
-          Revenue Settings
-          {settingsOpen ? <ChevronUp size={14} style={{ marginLeft: "auto" }} /> : <ChevronDown size={14} style={{ marginLeft: "auto" }} />}
-        </button>
-        {settingsOpen && (
-          <div style={{ marginTop: 16, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--text-secondary)", marginBottom: 4 }}>Challenge Ticket Price ($)</label>
-              <input
-                type="number"
-                value={challengePrice}
-                onChange={e => setChallengePrice(Number(e.target.value))}
-                style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border-default)", fontSize: 13, width: 120, outline: "none" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--text-secondary)", marginBottom: 4 }}>Coaching Program Price ($)</label>
-              <input
-                type="number"
-                value={coachingPrice}
-                onChange={e => setCoachingPrice(Number(e.target.value))}
-                style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border-default)", fontSize: 13, width: 120, outline: "none" }}
-              />
-            </div>
-            <button
-              onClick={saveSettings}
-              disabled={savingSettings}
-              style={{ padding: "7px 18px", borderRadius: 8, background: "#10B981", color: "#fff", border: "none", fontWeight: 600, fontSize: 13, cursor: savingSettings ? "not-allowed" : "pointer", opacity: savingSettings ? 0.7 : 1 }}
-            >
-              {savingSettings ? "Saving…" : "Save Settings"}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Skel h={120} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}><Skel h={200} /><Skel h={200} /></div>
-        </div>
-      ) : !data?.hasData ? (
-        <div style={{ ...CARD, textAlign: "center", padding: "60px 24px" }}>
-          <DollarSign size={40} style={{ margin: "0 auto 16px", opacity: 0.2, display: "block" }} />
-          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>No revenue data yet</div>
-          <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>
-            Mark leads as <strong>Converted</strong> in the Leads page to start tracking revenue.
-          </div>
-          <a
-            href="/dashboard/leads"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 8, background: "#10B981", color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none" }}
-          >
-            Go to Leads <ExternalLink size={13} />
-          </a>
-        </div>
-      ) : (
-        <>
-          {/* Hero revenue number */}
-          <div style={{ ...CARD, textAlign: "center", padding: "32px 24px" }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Estimated Revenue This Period</div>
-            <div style={{ fontSize: 48, fontWeight: 800, color: "#10B981", lineHeight: 1, marginBottom: 12 }}>{fmtCurrency(data.totalRevenue)}</div>
-            <div style={{ display: "flex", gap: 24, justifyContent: "center", fontSize: 13, color: "var(--text-secondary)" }}>
-              {data.revenueByProduct.challenge > 0 && <span>Challenge tickets: <strong style={{ color: "#3B82F6" }}>{fmtCurrency(data.revenueByProduct.challenge)}</strong></span>}
-              {data.revenueByProduct.coaching > 0 && <span>Coaching: <strong style={{ color: "#10B981" }}>{fmtCurrency(data.revenueByProduct.coaching)}</strong></span>}
-            </div>
-          </div>
-
-          {/* Revenue over time + by funnel */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={CARD}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Revenue Over Time</div>
-              {data.revenueOverTime.length === 0 ? <EmptyState message="No monthly data" /> : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={data.revenueOverTime}>
-                    <CartesianGrid {...CHART_GRID} />
-                    <XAxis dataKey="month" {...CHART_AXIS} />
-                    <YAxis {...CHART_AXIS} tickFormatter={fmtCurrency} />
-                    <Tooltip {...CHART_TOOLTIP} formatter={(v) => [fmtCurrency(Number(v ?? 0)), ""]} />
-                    <Legend />
-                    <Bar dataKey="challengeRevenue" name="Challenge" fill={COLORS.challenge} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                    <Bar dataKey="coachingRevenue" name="Coaching" fill={COLORS.coaching} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            <div style={CARD}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Revenue by Funnel</div>
-              {data.revenueByFunnel.length === 0 ? <EmptyState message="No funnel revenue data" /> : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                        {["Funnel", "Leads", "Conv.", "Rate", "Revenue"].map(h => (
-                          <th key={h} style={{ padding: "5px 8px", textAlign: "left", fontWeight: 500, color: "var(--text-secondary)", fontSize: 11 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.revenueByFunnel.slice(0, 6).map(f => (
-                        <tr key={f.funnelId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                          <td style={{ padding: "6px 8px", maxWidth: 120 }}><div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div></td>
-                          <td style={{ padding: "6px 8px" }}>{f.leads}</td>
-                          <td style={{ padding: "6px 8px" }}>{f.conversions}</td>
-                          <td style={{ padding: "6px 8px" }}>{f.convRate}%</td>
-                          <td style={{ padding: "6px 8px", fontWeight: 600, color: "#10B981" }}>{fmtCurrency(f.revenue)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Clip attribution */}
-          {data.clipAttribution.length > 0 && (
-            <div style={CARD}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 16 }}>Clip Revenue Attribution</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
-                    {["Clip Title", "Views", "Leads", "Conversions", "Revenue"].map(h => (
-                      <th key={h} style={{ padding: "6px 8px", textAlign: "left", fontWeight: 500, color: "var(--text-secondary)", fontSize: 11 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.clipAttribution.map(c => (
-                    <tr key={c.clipId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td style={{ padding: "8px", maxWidth: 200 }}><div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{c.title || c.clipId}</div></td>
-                      <td style={{ padding: "8px" }}>{fmt(c.views)}</td>
-                      <td style={{ padding: "8px" }}>{c.leadsGenerated}</td>
-                      <td style={{ padding: "8px" }}>{c.conversions}</td>
-                      <td style={{ padding: "8px", fontWeight: 600, color: "#10B981" }}>{fmtCurrency(c.revenue)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Projection */}
-          <div style={{ ...CARD, background: "linear-gradient(135deg, rgba(16,185,129,0.06), rgba(59,130,246,0.04))" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <TrendingUp size={16} style={{ color: "#10B981" }} />
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Monthly Projection</span>
-            </div>
-            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
-              At your current rate of <strong style={{ color: "var(--text-primary)" }}>{data.projection.monthlyLeads} leads/month</strong> with a <strong style={{ color: "var(--text-primary)" }}>{data.projection.convRate}% conversion rate</strong>, you&apos;re projected to generate{" "}
-              <strong style={{ color: "#10B981", fontSize: 16 }}>{fmtCurrency(data.projection.projectedMonthly)}</strong> this month.
-            </p>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-
-// ─── Skeleton Loading ─────────────────────────────────────────────────────────
-
-function AnalyticsSkeleton() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12 }}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-            <Skel h={12} w="60%" />
-            <Skel h={28} w="45%" />
-            <Skel h={10} w="80%" />
-          </div>
-        ))}
-      </div>
-      {/* main chart */}
-      <Skel h={280} />
-      {/* two side-by-side */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <Skel h={220} />
-        <Skel h={220} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Empty / Onboarding State ─────────────────────────────────────────────────
+// ─── Onboarding empty state ───────────────────────────────────────────────────
 
 function AnalyticsEmptyState() {
   const steps = [
-    { num: 1, label: "Connect Accounts", href: "/dashboard/social-accounts", active: false },
-    { num: 2, label: "Create Clips", href: "/dashboard/clips", active: false },
-    { num: 3, label: "Post to Accounts", href: "/dashboard/publish", active: false },
-    { num: 4, label: "Track Results Here", href: "#", active: true },
+    { n: 1, label: "Connect Accounts", href: "/dashboard/social-accounts", active: false },
+    { n: 2, label: "Create Clips", href: "/dashboard/clips", active: false },
+    { n: 3, label: "Post to Accounts", href: "/dashboard/publish", active: false },
+    { n: 4, label: "Track Results Here", href: "#", active: true },
   ];
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
       <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: 16, padding: "52px 48px", maxWidth: 560, width: "100%", textAlign: "center", boxShadow: "var(--shadow-md)" }}>
-        {/* Icon */}
         <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--accent-blue-light)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
           <BarChart2 size={32} style={{ color: "var(--accent-blue)" }} />
         </div>
-
         <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 10px" }}>
           Your analytics dashboard
         </h2>
         <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: "0 auto 32px", maxWidth: 380, lineHeight: 1.6 }}>
           Connect your social accounts and post your first clips to start tracking performance across all platforms.
         </p>
-
-        {/* Steps */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32, textAlign: "left", maxWidth: 300, margin: "0 auto 32px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 32, textAlign: "left", maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>
           {steps.map(step => (
             <a
-              key={step.num}
+              key={step.n}
               href={step.href}
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: step.active ? "var(--accent-blue-light)" : "var(--bg-subtle)", border: `1px solid ${step.active ? "var(--accent-blue-border)" : "var(--border-subtle)"}`, textDecoration: "none", transition: "all 150ms" }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: step.active ? "var(--accent-blue-light)" : "var(--bg-subtle)", border: `1px solid ${step.active ? "var(--accent-blue-border)" : "var(--border-subtle)"}`, textDecoration: "none" }}
             >
               <span style={{ width: 24, height: 24, borderRadius: "50%", background: step.active ? "var(--accent-blue)" : "var(--border-default)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: step.active ? "#fff" : "var(--text-secondary)", flexShrink: 0 }}>
-                {step.num}
+                {step.n}
               </span>
               <span style={{ fontSize: 14, fontWeight: step.active ? 600 : 400, color: step.active ? "var(--accent-blue)" : "var(--text-secondary)" }}>
                 {step.label}
@@ -1216,72 +292,1877 @@ function AnalyticsEmptyState() {
             </a>
           ))}
         </div>
-
         <a
           href="/dashboard/social-accounts"
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 28px", borderRadius: 10, background: "var(--accent-blue)", color: "#fff", fontWeight: 600, fontSize: 15, textDecoration: "none", boxShadow: "var(--shadow-glow-blue)" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 28px", borderRadius: 10, background: "var(--accent-blue)", color: "#fff", fontWeight: 600, fontSize: 15, textDecoration: "none" }}
         >
-          Connect Your First Account
-          <ArrowRight size={16} />
+          Connect Your First Account <ArrowRight size={16} />
         </a>
       </div>
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+function TrendBadge({ value }: { value: number }) {
+  const positive = value >= 0;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 2,
+        fontSize: 11,
+        fontWeight: 600,
+        color: positive ? "#10B981" : "#F43F5E",
+        background: positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)",
+        borderRadius: 99,
+        padding: "2px 6px",
+      }}
+    >
+      {positive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+      {Math.abs(value).toFixed(1)}%
+    </span>
+  );
+}
 
-const TABS = ["Overview", "Accounts", "Clips", "Leads", "Revenue"] as const;
-type Tab = (typeof TABS)[number];
+function PlatformBadge({ platform }: { platform: string }) {
+  const isTikTok = platform.toLowerCase() === "tiktok";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        fontSize: 10,
+        fontWeight: 700,
+        color: isTikTok ? "#3B82F6" : "#A855F7",
+        background: isTikTok ? "rgba(59,130,246,0.08)" : "rgba(168,85,247,0.08)",
+        border: `1px solid ${isTikTok ? "rgba(59,130,246,0.2)" : "rgba(168,85,247,0.2)"}`,
+        borderRadius: 99,
+        padding: "2px 8px",
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+      }}
+    >
+      {isTikTok ? "TikTok" : "Instagram"}
+    </span>
+  );
+}
 
-const TIME_RANGES = [
-  { label: "7D", value: "7d" },
-  { label: "14D", value: "14d" },
-  { label: "30D", value: "30d" },
-  { label: "90D", value: "90d" },
-] as const;
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; color: string }> = {
+    new: { bg: "rgba(59,130,246,0.08)", color: "#3B82F6" },
+    contacted: { bg: "rgba(245,158,11,0.08)", color: "#F59E0B" },
+    qualified: { bg: "rgba(124,58,237,0.08)", color: "#7C3AED" },
+    converted: { bg: "rgba(16,185,129,0.08)", color: "#10B981" },
+    lost: { bg: "rgba(244,63,94,0.08)", color: "#F43F5E" },
+  };
+  const s = status.toLowerCase();
+  const style = map[s] ?? { bg: "rgba(161,161,170,0.1)", color: "#71717A" };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        fontSize: 11,
+        fontWeight: 600,
+        color: style.color,
+        background: style.bg,
+        borderRadius: 99,
+        padding: "2px 8px",
+        textTransform: "capitalize",
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function MiniSparkline({ data, color = "#3B82F6" }: { data: number[]; color?: string }) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data, 1);
+  const points = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * 60;
+      const y = 20 - (v / max) * 18;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <svg width={60} height={20} style={{ display: "block" }}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ViralityBadge({ score }: { score: number }) {
+  const color =
+    score >= 8 ? "#10B981" : score >= 5 ? "#F59E0B" : "#F43F5E";
+  const bg =
+    score >= 8 ? "rgba(16,185,129,0.08)" : score >= 5 ? "rgba(245,158,11,0.08)" : "rgba(244,63,94,0.08)";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3,
+        fontSize: 11,
+        fontWeight: 700,
+        color,
+        background: bg,
+        borderRadius: 99,
+        padding: "2px 7px",
+      }}
+    >
+      <Star size={9} fill={color} />
+      {score.toFixed(1)}
+    </span>
+  );
+}
+
+function SectionError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "14px 18px",
+        background: "rgba(245,158,11,0.06)",
+        border: "1px solid rgba(245,158,11,0.25)",
+        borderRadius: "var(--radius-md)",
+        marginBottom: 24,
+      }}
+    >
+      <AlertCircle size={16} style={{ color: "#F59E0B", flexShrink: 0 }} />
+      <span style={{ fontSize: 13, color: "#71717A", flex: 1 }}>{message}</span>
+      <button
+        onClick={onRetry}
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: "#3B82F6",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          textDecoration: "underline",
+        }}
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
+
+// ─── TAB 1: Overview ─────────────────────────────────────────────────────────
+
+function RevenueFunnel({ data }: { data: OverviewData | null }) {
+  if (!data) {
+    return <SkeletonBlock height={140} />;
+  }
+
+  const clipsPosted = data.totalClipsPosted;
+  const totalViews = data.totalViews;
+  const totalEngagements = data.totalLikes + data.totalComments + data.totalShares + data.totalSaves;
+  const pageVisits = Math.round(totalViews * 0.004);
+  const leadsEstimate = pageVisits > 0 ? Math.round(pageVisits * 0.05) : 0;
+  const conversions = Math.round(leadsEstimate * 0.05);
+
+  const steps = [
+    { label: "Content", sublabel: "Clips Posted", value: clipsPosted, color: "#3B82F6" },
+    { label: "Reach", sublabel: "Total Views", value: totalViews, color: "#6366F1" },
+    { label: "Engagement", sublabel: "Interactions", value: totalEngagements, color: "#8B5CF6" },
+    { label: "Traffic", sublabel: "Page Visits", value: pageVisits, color: "#A855F7" },
+    { label: "Leads", sublabel: "Leads Est.", value: leadsEstimate, color: "#EC4899" },
+    { label: "Converts", sublabel: "Conversions", value: conversions, color: "#10B981" },
+  ];
+
+  const maxVal = Math.max(clipsPosted, 1);
+
+  return (
+    <div style={{ ...CARD_STYLE, padding: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <Activity size={16} style={{ color: "#3B82F6" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Revenue Pipeline Funnel</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "stretch", gap: 0, overflowX: "auto" }}>
+        {steps.map((step, i) => {
+          const nextStep = steps[i + 1];
+          const convRate =
+            i < steps.length - 1 && step.value > 0
+              ? ((nextStep.value / step.value) * 100).toFixed(1)
+              : null;
+
+          const barHeight = Math.max(40, Math.min(100, (step.value / Math.max(steps[0].value, 1)) * 100));
+
+          return (
+            <React.Fragment key={step.label}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  flex: 1,
+                  minWidth: 90,
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: barHeight,
+                    background: `linear-gradient(135deg, ${step.color}22, ${step.color}44)`,
+                    border: `1px solid ${step.color}44`,
+                    borderRadius: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "8px 4px",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "30%",
+                      background: `${step.color}22`,
+                    }}
+                  />
+                  <span style={{ fontSize: 16, fontWeight: 800, color: step.color, lineHeight: 1 }}>
+                    {fmt(step.value)}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: step.color, opacity: 0.8, marginTop: 2 }}>
+                    {step.label}
+                  </span>
+                </div>
+                <span style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 6, textAlign: "center" }}>
+                  {step.sublabel}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 6px",
+                    flexShrink: 0,
+                  }}
+                >
+                  <ChevronRight size={14} style={{ color: "var(--text-tertiary)" }} />
+                  {convRate !== null && (
+                    <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-tertiary)", marginTop: 2, whiteSpace: "nowrap" }}>
+                      {convRate}%
+                    </span>
+                  )}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OverviewStatCards({
+  data,
+  loading,
+}: {
+  data: OverviewData | null;
+  loading: boolean;
+}) {
+  if (loading || !data) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} style={{ ...CARD_STYLE, padding: 20 }}>
+            <SkeletonBlock height={12} width="60%" />
+            <SkeletonBlock height={28} width="80%" />
+            <SkeletonBlock height={10} width="40%" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const pageVisits = Math.round(data.totalViews * 0.004);
+  const leadsEstimate = Math.round(pageVisits * 0.05);
+  const estRevenue = Math.round(leadsEstimate * 0.05 * 997);
+
+  const stats = [
+    {
+      label: "Total Views",
+      value: fmt(data.totalViews),
+      trend: data.trends.views,
+      icon: Eye,
+      color: "#3B82F6",
+      orb: "rgba(59,130,246,0.08)",
+      sparkData: data.viewsOverTime.map((d) => d.tiktokViews + d.instagramViews),
+    },
+    {
+      label: "Engagement Rate",
+      value: fmtPct(data.engagementRate),
+      trend: data.trends.engagementRate,
+      icon: Heart,
+      color: "#F43F5E",
+      orb: "rgba(244,63,94,0.08)",
+      sparkData: data.viewsOverTime.map((_, i) => data.engagementRate + (Math.random() - 0.5) * 0.5),
+    },
+    {
+      label: "New Followers",
+      value: "N/A",
+      trend: 0,
+      icon: Users,
+      color: "#A855F7",
+      orb: "rgba(168,85,247,0.08)",
+      sparkData: [] as number[],
+    },
+    {
+      label: "Landing Page Visits",
+      value: fmt(pageVisits),
+      trend: data.trends.views * 0.8,
+      icon: ExternalLink,
+      color: "#06B6D4",
+      orb: "rgba(6,182,212,0.08)",
+      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.004)),
+    },
+    {
+      label: "New Leads (Est.)",
+      value: fmt(leadsEstimate),
+      trend: data.trends.views * 0.6,
+      icon: Zap,
+      color: "#F59E0B",
+      orb: "rgba(245,158,11,0.08)",
+      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.004 * 0.05)),
+    },
+    {
+      label: "Est. Revenue",
+      value: fmtCurrency(estRevenue),
+      trend: data.trends.views * 0.5,
+      icon: DollarSign,
+      color: "#10B981",
+      orb: "rgba(16,185,129,0.08)",
+      sparkData: data.viewsOverTime.map((d) => Math.round((d.tiktokViews + d.instagramViews) * 0.004 * 0.05 * 0.05 * 997)),
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 16,
+        marginBottom: 24,
+      }}
+    >
+      {stats.map((s) => {
+        const Icon = s.icon;
+        return (
+          <div
+            key={s.label}
+            className="stat-card"
+            style={{
+              ...CARD_STYLE,
+              padding: 20,
+              "--card-orb-color": s.orb,
+            } as React.CSSProperties}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: s.orb,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon size={16} style={{ color: s.color }} />
+              </div>
+              <MiniSparkline data={s.sparkData} color={s.color} />
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 4 }}>
+              {s.value}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>{s.label}</span>
+              {s.trend !== 0 && s.value !== "N/A" && <TrendBadge value={s.trend} />}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
+function ViewsOverTimeChart({ data }: { data: OverviewData | null }) {
+  if (!data || data.viewsOverTime.length === 0) {
+    return (
+      <div style={{ ...CARD_STYLE, padding: 24, marginBottom: 24 }}>
+        <SkeletonBlock height={200} />
+      </div>
+    );
+  }
+
+  const chartData = data.viewsOverTime.map((d) => ({
+    ...d,
+    date: fmtDate(d.date),
+  }));
+
+  return (
+    <div style={{ ...CARD_STYLE, padding: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <TrendingUp size={16} style={{ color: "#3B82F6" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Views Over Time</span>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 16 }}>
+          <span style={{ fontSize: 11, color: "#3B82F6", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3B82F6", display: "inline-block" }} />
+            TikTok
+          </span>
+          <span style={{ fontSize: 11, color: "#A855F7", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#A855F7", display: "inline-block" }} />
+            Instagram
+          </span>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <defs>
+            <linearGradient id="tiktokGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="instagramGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#A855F7" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#A855F7" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {CHART_GRID}
+          <XAxis dataKey="date" stroke="#A1A1AA" tick={{ fontSize: 11, fill: "#71717A" }} />
+          <YAxis stroke="#A1A1AA" tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={(v) => fmt(v)} />
+          <Tooltip {...TOOLTIP_STYLE} formatter={(v) => fmt(Number(v ?? 0))} />
+          <Area
+            type="monotone"
+            dataKey="tiktokViews"
+            name="TikTok"
+            stroke="#3B82F6"
+            fill="url(#tiktokGrad)"
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+          <Area
+            type="monotone"
+            dataKey="instagramViews"
+            name="Instagram"
+            stroke="#A855F7"
+            fill="url(#instagramGrad)"
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function EngagementBreakdownChart({ data }: { data: OverviewData | null }) {
+  if (!data) {
+    return (
+      <div style={{ ...CARD_STYLE, padding: 24, marginBottom: 24 }}>
+        <SkeletonBlock height={200} />
+      </div>
+    );
+  }
+
+  const eb = data.engagementBreakdown;
+  const total = eb.likes + eb.comments + eb.shares + eb.saves;
+  const chartData = [
+    { name: "Likes", value: eb.likes, color: COLORS.likes },
+    { name: "Comments", value: eb.comments, color: COLORS.comments },
+    { name: "Shares", value: eb.shares, color: COLORS.shares },
+    { name: "Saves", value: eb.saves, color: COLORS.saves },
+  ];
+
+  return (
+    <div style={{ ...CARD_STYLE, padding: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <BarChart2 size={16} style={{ color: "#3B82F6" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Engagement Breakdown</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-secondary)" }}>
+          {fmt(total)} total
+        </span>
+      </div>
+      <div style={{ display: "flex", gap: 24 }}>
+        <ResponsiveContainer width="60%" height={180}>
+          <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            {CHART_GRID}
+            <XAxis dataKey="name" stroke="#A1A1AA" tick={{ fontSize: 11, fill: "#71717A" }} />
+            <YAxis stroke="#A1A1AA" tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={(v) => fmt(v)} />
+            <Tooltip {...TOOLTIP_STYLE} formatter={(v) => fmt(Number(v ?? 0))} />
+            <Bar dataKey="value" name="Count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+              {chartData.map((entry, i) => (
+                <Cell key={i} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
+          {chartData.map((item) => (
+            <div key={item.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "var(--text-secondary)", flex: 1 }}>{item.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{fmt(item.value)}</span>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                {total > 0 ? ((item.value / total) * 100).toFixed(1) + "%" : "0%"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopClipsTable({ clips }: { clips: OverviewData["topClips"] }) {
+  if (!clips || clips.length === 0) {
+    return (
+      <div style={{ ...CARD_STYLE, padding: 24 }}>
+        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-tertiary)", fontSize: 13 }}>
+          No clip data available yet. Publish some clips to see analytics.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...CARD_STYLE, padding: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <Star size={16} style={{ color: "#F59E0B" }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Top Clips</span>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              {["Title", "Virality", "Views", "Likes", "Comments", "Eng. Rate", "Platforms"].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text-tertiary)",
+                    padding: "0 12px 10px 0",
+                    borderBottom: "1px solid var(--border-default)",
+                    whiteSpace: "nowrap",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {clips.slice(0, 5).map((clip) => (
+              <tr key={clip.clipId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                <td style={{ padding: "12px 12px 12px 0", fontSize: 13, fontWeight: 500, color: "var(--text-primary)", maxWidth: 200 }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                    {clip.title}
+                  </span>
+                </td>
+                <td style={{ padding: "12px 12px 12px 0" }}>
+                  <ViralityBadge score={clip.viralityScore} />
+                </td>
+                <td style={{ padding: "12px 12px 12px 0", fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
+                  {fmt(clip.totalViews)}
+                </td>
+                <td style={{ padding: "12px 12px 12px 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  {fmt(clip.totalLikes)}
+                </td>
+                <td style={{ padding: "12px 12px 12px 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  {fmt(clip.totalComments)}
+                </td>
+                <td style={{ padding: "12px 12px 12px 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  {fmtPct(clip.engagementRate)}
+                </td>
+                <td style={{ padding: "12px 0 12px 0" }}>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {clip.platforms.map((p) => (
+                      <PlatformBadge key={p} platform={p} />
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── TAB 2: Accounts ─────────────────────────────────────────────────────────
+
+function AccountsTab({ workspaceId }: { workspaceId: string }) {
+  const [accounts, setAccounts] = useState<AccountData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<AccountDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const loadAccounts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/analytics/accounts?workspaceId=${workspaceId}`);
+      if (!res.ok) throw new Error("Failed to load accounts");
+      const data = await res.json();
+      setAccounts(data.accounts ?? []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load accounts");
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  const loadDetail = useCallback(async (id: string) => {
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/analytics/accounts/${id}`);
+      if (!res.ok) throw new Error("Failed to load account detail");
+      const data = await res.json();
+      setDetail(data);
+    } catch {
+      setDetail(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  const handleCardClick = (id: string) => {
+    if (selectedId === id) {
+      setSelectedId(null);
+      setDetail(null);
+    } else {
+      setSelectedId(id);
+      loadDetail(id);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ ...CARD_STYLE, padding: 20 }}>
+            <SkeletonBlock height={48} width={48} />
+            <SkeletonBlock height={14} width="70%" />
+            <SkeletonBlock height={12} width="50%" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return <SectionError message={error} onRetry={loadAccounts} />;
+  }
+
+  if (accounts.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-tertiary)", fontSize: 14 }}>
+        <Users size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+        <p>No social accounts connected yet.</p>
+        <a href="/dashboard/social-accounts" style={{ color: "#3B82F6", fontSize: 13, marginTop: 8, display: "inline-block" }}>
+          Connect an account →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {accounts.map((acc) => {
+          const isTikTok = acc.platform.toLowerCase() === "tiktok";
+          const isSelected = selectedId === acc.id;
+          const initials = (acc.displayName || acc.username || "?").slice(0, 2).toUpperCase();
+
+          return (
+            <div key={acc.id}>
+              <div
+                onClick={() => handleCardClick(acc.id)}
+                style={{
+                  ...CARD_STYLE,
+                  padding: 20,
+                  cursor: "pointer",
+                  borderLeft: `3px solid ${isTikTok ? "#3B82F6" : "#A855F7"}`,
+                  transition: "box-shadow 150ms, transform 150ms",
+                  ...(isSelected ? { boxShadow: "0 0 0 2px " + (isTikTok ? "#3B82F6" : "#A855F7") + "44" } : {}),
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-md)";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isSelected ? "0 0 0 2px " + (isTikTok ? "#3B82F6" : "#A855F7") + "44" : "var(--shadow-sm)";
+                  (e.currentTarget as HTMLDivElement).style.transform = "";
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
+                  {acc.avatarUrl ? (
+                    <img
+                      src={acc.avatarUrl}
+                      alt={acc.displayName}
+                      style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: isTikTok ? "rgba(59,130,246,0.12)" : "rgba(168,85,247,0.12)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: isTikTok ? "#3B82F6" : "#A855F7",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {initials}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {acc.displayName || acc.username}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      @{acc.username}
+                    </div>
+                  </div>
+                  <PlatformBadge platform={acc.platform} />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                  {[
+                    { label: "Followers", value: fmt(acc.followerCount) },
+                    { label: "Posts", value: fmt(acc.publishedPostsCount) },
+                    { label: "Avg Views", value: fmt(acc.avgViews) },
+                    { label: "Avg Eng.", value: fmtPct(acc.avgEngagement) },
+                  ].map((s) => (
+                    <div key={s.label}>
+                      <div style={{ fontSize: 10, color: "var(--text-tertiary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>
+                        {s.label}
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {acc.recentViews && acc.recentViews.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 10, color: "var(--text-tertiary)" }}>Recent views</span>
+                    <MiniSparkline data={acc.recentViews} color={isTikTok ? "#3B82F6" : "#A855F7"} />
+                  </div>
+                )}
+
+                <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  {isSelected ? (
+                    <ChevronUp size={12} style={{ color: "var(--text-tertiary)" }} />
+                  ) : (
+                    <ChevronDown size={12} style={{ color: "var(--text-tertiary)" }} />
+                  )}
+                  <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                    {isSelected ? "Collapse" : "View detail"}
+                  </span>
+                </div>
+              </div>
+
+              {isSelected && (
+                <div style={{ ...CARD_STYLE, marginTop: 8, padding: 20, borderTop: "2px solid " + (isTikTok ? "#3B82F6" : "#A855F7") }}>
+                  {detailLoading ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-tertiary)", fontSize: 13 }}>
+                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                      Loading detail...
+                    </div>
+                  ) : detail ? (
+                    <AccountDetailView detail={detail} />
+                  ) : (
+                    <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>No detail available</span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AccountDetailView({ detail }: { detail: AccountDetail }) {
+  const { totals, posts } = detail;
+  const stats = [
+    { label: "Total Views", value: fmt(totals.views), icon: Eye, color: "#3B82F6" },
+    { label: "Engagement", value: fmt(totals.likes + totals.comments + totals.shares), icon: Heart, color: "#F43F5E" },
+    { label: "Total Posts", value: fmt(totals.posts), icon: BarChart2, color: "#F59E0B" },
+    { label: "Followers", value: fmt(detail.account.followerCount), icon: Users, color: "#10B981" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        {stats.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} style={{ background: "var(--bg-subtle)", borderRadius: 8, padding: 12, textAlign: "center" }}>
+              <Icon size={14} style={{ color: s.color, margin: "0 auto 4px" }} />
+              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: "var(--text-tertiary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {posts.length > 0 && (
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            Recent Posts
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                {["Title", "Posted", "Views", "Likes", "Comments", "Eng. Rate"].map((h) => (
+                  <th key={h} style={{ textAlign: "left", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", padding: "0 10px 8px 0", borderBottom: "1px solid var(--border-default)", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {posts.slice(0, 10).map((post) => (
+                <tr key={post.publishLogId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-primary)", maxWidth: 180 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                      {post.clip.title}
+                    </span>
+                  </td>
+                  <td style={{ padding: "10px 10px 10px 0", fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
+                    {fmtDate(post.publishedAt)}
+                  </td>
+                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>
+                    {post.metrics ? fmt(post.metrics.views) : "—"}
+                  </td>
+                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                    {post.metrics ? fmt(post.metrics.likes) : "—"}
+                  </td>
+                  <td style={{ padding: "10px 10px 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                    {post.metrics ? fmt(post.metrics.comments) : "—"}
+                  </td>
+                  <td style={{ padding: "10px 0 10px 0", fontSize: 12, color: "var(--text-secondary)" }}>
+                    {post.metrics ? fmtPct(post.metrics.engagementRate) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ─── TAB 3: Clips ────────────────────────────────────────────────────────────
+
+function ClipsTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
+  const [clips, setClips] = useState<ClipData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"totalViews" | "avgEngRate" | "viralityScore">("totalViews");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const loadClips = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/analytics/clips?workspaceId=${workspaceId}&timeRange=${timeRange}&sortBy=${sortBy}`
+      );
+      if (!res.ok) throw new Error("Failed to load clips");
+      const data = await res.json();
+      setClips(data.clips ?? []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load clips");
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId, timeRange, sortBy]);
+
+  useEffect(() => {
+    loadClips();
+  }, [loadClips]);
+
+  if (loading) {
+    return (
+      <div style={{ ...CARD_STYLE, padding: 24 }}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid var(--border-subtle)" }}>
+            <SkeletonBlock height={40} width={40} />
+            <div style={{ flex: 1 }}>
+              <SkeletonBlock height={14} width="60%" />
+              <SkeletonBlock height={11} width="40%" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return <SectionError message={error} onRetry={loadClips} />;
+  }
+
+  if (clips.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-tertiary)", fontSize: 14 }}>
+        <Activity size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+        <p>No clips published in this time range.</p>
+      </div>
+    );
+  }
+
+  const sortOptions = [
+    { value: "totalViews", label: "Total Views" },
+    { value: "avgEngRate", label: "Engagement Rate" },
+    { value: "viralityScore", label: "Virality Score" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16, gap: 8 }}>
+        <span style={{ fontSize: 12, color: "var(--text-secondary)", alignSelf: "center" }}>Sort by:</span>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+          style={{
+            fontSize: 12,
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid var(--border-default)",
+            background: "var(--bg-surface)",
+            color: "var(--text-primary)",
+            cursor: "pointer",
+          }}
+        >
+          {sortOptions.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ ...CARD_STYLE, overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "var(--bg-subtle)" }}>
+              {["Clip", "Source", "Virality", "Views", "Eng. Rate", "Accounts", "Type", "Status"].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "var(--text-tertiary)",
+                    padding: "10px 12px",
+                    borderBottom: "1px solid var(--border-default)",
+                    whiteSpace: "nowrap",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {clips.map((clip) => (
+              <React.Fragment key={clip.id}>
+                <tr
+                  onClick={() => setExpandedId(expandedId === clip.id ? null : clip.id)}
+                  style={{
+                    borderBottom: "1px solid var(--border-subtle)",
+                    cursor: "pointer",
+                    background: expandedId === clip.id ? "var(--bg-subtle)" : "transparent",
+                    transition: "background 150ms",
+                  }}
+                  onMouseEnter={(e) => { if (expandedId !== clip.id) (e.currentTarget as HTMLTableRowElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = expandedId === clip.id ? "var(--bg-subtle)" : "transparent"; }}
+                >
+                  <td style={{ padding: "12px", fontSize: 13, fontWeight: 500, color: "var(--text-primary)", maxWidth: 220 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {expandedId === clip.id ? <ChevronUp size={12} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} /> : <ChevronDown size={12} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clip.title}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "12px", fontSize: 11, color: "var(--text-tertiary)", maxWidth: 140 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                      {clip.sourceVideoTitle || "—"}
+                    </span>
+                  </td>
+                  <td style={{ padding: "12px" }}>
+                    <ViralityBadge score={clip.viralityScore} />
+                  </td>
+                  <td style={{ padding: "12px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                    {fmt(clip.totalViews)}
+                  </td>
+                  <td style={{ padding: "12px", fontSize: 13, color: "var(--text-secondary)" }}>
+                    {fmtPct(clip.avgEngRate)}
+                  </td>
+                  <td style={{ padding: "12px" }}>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {clip.accountsPostedTo.tiktok > 0 && <PlatformBadge platform="tiktok" />}
+                      {clip.accountsPostedTo.instagram > 0 && <PlatformBadge platform="instagram" />}
+                    </div>
+                  </td>
+                  <td style={{ padding: "12px" }}>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: "#06B6D4",
+                        background: "rgba(6,182,212,0.08)",
+                        borderRadius: 99,
+                        padding: "2px 7px",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {clip.clipType || "clip"}
+                    </span>
+                  </td>
+                  <td style={{ padding: "12px" }}>
+                    <StatusBadge status={clip.status} />
+                  </td>
+                </tr>
+
+                {expandedId === clip.id && clip.perAccountBreakdown.length > 0 && (
+                  <tr>
+                    <td colSpan={8} style={{ background: "var(--bg-subtle)", padding: "0 12px 16px 36px" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", margin: "12px 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        Per-Account Breakdown
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr>
+                            {["Account", "Platform", "Views", "Likes", "Comments", "Shares", "Saves", "Eng. Rate", "Posted"].map((h) => (
+                              <th key={h} style={{ textAlign: "left", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", padding: "4px 8px 6px 0", borderBottom: "1px solid var(--border-default)", whiteSpace: "nowrap" }}>
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clip.perAccountBreakdown.map((row) => (
+                            <tr key={row.accountId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, color: "var(--text-primary)", fontWeight: 500 }}>@{row.handle}</td>
+                              <td style={{ padding: "8px 8px 8px 0" }}><PlatformBadge platform={row.platform} /></td>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{fmt(row.views)}</td>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, color: "var(--text-secondary)" }}>{fmt(row.likes)}</td>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, color: "var(--text-secondary)" }}>{fmt(row.comments)}</td>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, color: "var(--text-secondary)" }}>{fmt(row.shares)}</td>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, color: "var(--text-secondary)" }}>{fmt(row.saves)}</td>
+                              <td style={{ padding: "8px 8px 8px 0", fontSize: 12, color: "var(--text-secondary)" }}>{fmtPct(row.engRate)}</td>
+                              <td style={{ padding: "8px 0 8px 0", fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>{fmtDate(row.postedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── TAB 4: Leads ────────────────────────────────────────────────────────────
+
+function LeadsTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
+  const [data, setData] = useState<LeadsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadLeads = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/analytics/leads?workspaceId=${workspaceId}&timeRange=${timeRange}`);
+      if (!res.ok) throw new Error("Failed to load leads");
+      const d = await res.json();
+      setData(d);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load leads");
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId, timeRange]);
+
+  useEffect(() => {
+    loadLeads();
+  }, [loadLeads]);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ ...CARD_STYLE, padding: 20 }}>
+              <SkeletonBlock height={28} width="70%" />
+              <SkeletonBlock height={11} width="50%" />
+            </div>
+          ))}
+        </div>
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <SkeletonBlock height={200} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <SectionError message={error} onRetry={loadLeads} />;
+  }
+
+  if (!data) return null;
+
+  const { stats, leadsOverTime, leadsByFunnel, leadsBySource, statusPipeline, recentLeads } = data;
+
+  const statCards = [
+    { label: "Total Leads", value: fmt(stats.totalLeads), icon: Users, color: "#3B82F6", orb: "rgba(59,130,246,0.08)" },
+    { label: "Leads Per Day", value: stats.leadsPerDay.toFixed(1), icon: TrendingUp, color: "#10B981", orb: "rgba(16,185,129,0.08)" },
+    { label: "Top Source", value: stats.topSource || "—", icon: Zap, color: "#F59E0B", orb: "rgba(245,158,11,0.08)" },
+    { label: "Lead-to-Sale Rate", value: fmtPct(stats.leadToSaleRate), icon: DollarSign, color: "#A855F7", orb: "rgba(168,85,247,0.08)" },
+  ];
+
+  const sourceData = [
+    { name: "Direct", value: leadsBySource.direct, color: PIE_COLORS[0] },
+    { name: "TikTok", value: leadsBySource.tiktok, color: PIE_COLORS[1] },
+    { name: "Instagram", value: leadsBySource.instagram, color: PIE_COLORS[2] },
+    { name: "Other", value: leadsBySource.other, color: PIE_COLORS[3] },
+  ].filter((d) => d.value > 0);
+
+  const pipelineSteps = [
+    { label: "New", value: statusPipeline.new, color: "#3B82F6" },
+    { label: "Contacted", value: statusPipeline.contacted, color: "#F59E0B" },
+    { label: "Qualified", value: statusPipeline.qualified, color: "#A855F7" },
+    { label: "Converted", value: statusPipeline.converted, color: "#10B981" },
+    { label: "Lost", value: statusPipeline.lost, color: "#F43F5E" },
+  ];
+
+  const totalPipeline = pipelineSteps.reduce((sum, s) => sum + s.value, 0);
+
+  const lineData = leadsOverTime.map((d) => ({ ...d, date: fmtDate(d.date) }));
+  const funnelMaxCount = leadsByFunnel.length > 0 ? Math.max(...leadsByFunnel.map((f) => f.count), 1) : 1;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        {statCards.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} style={{ ...CARD_STYLE, padding: 20 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: s.orb,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 12,
+                }}
+              >
+                <Icon size={16} style={{ color: s.color }} />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 4 }}>
+                {s.value}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>{s.label}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Status Pipeline */}
+      <div style={{ ...CARD_STYLE, padding: 24 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Lead Status Pipeline</div>
+        <div style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
+          {pipelineSteps.map((step, i) => (
+            <React.Fragment key={step.label}>
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div
+                  style={{
+                    background: `${step.color}15`,
+                    border: `1px solid ${step.color}33`,
+                    borderRadius: 8,
+                    padding: "12px 8px",
+                  }}
+                >
+                  <div style={{ fontSize: 20, fontWeight: 800, color: step.color }}>{fmt(step.value)}</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: step.color, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 3 }}>
+                    {step.label}
+                  </div>
+                  {totalPipeline > 0 && (
+                    <div style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: 4 }}>
+                      {((step.value / totalPipeline) * 100).toFixed(0)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+              {i < pipelineSteps.length - 1 && (
+                <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                  <ChevronRight size={14} style={{ color: "var(--text-tertiary)" }} />
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Charts row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        {/* Leads over time */}
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Leads Over Time</div>
+          {lineData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={lineData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="leadsGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.leads} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={COLORS.leads} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                {CHART_GRID}
+                <XAxis dataKey="date" stroke="#A1A1AA" tick={{ fontSize: 10, fill: "#71717A" }} />
+                <YAxis stroke="#A1A1AA" tick={{ fontSize: 10, fill: "#71717A" }} allowDecimals={false} />
+                <Tooltip {...TOOLTIP_STYLE} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  name="Leads"
+                  stroke={COLORS.leads}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
+              No lead data in this period
+            </div>
+          )}
+        </div>
+
+        {/* Leads by Source Donut */}
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Lead Sources</div>
+          {sourceData.length > 0 ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <ResponsiveContainer width="55%" height={180}>
+                <PieChart>
+                  <Pie
+                    data={sourceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {sourceData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip {...TOOLTIP_STYLE} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                {sourceData.map((s) => {
+                  const total = sourceData.reduce((sum, x) => sum + x.value, 0);
+                  return (
+                    <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "var(--text-secondary)", flex: 1 }}>{s.name}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{fmt(s.value)}</span>
+                      <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                        {total > 0 ? ((s.value / total) * 100).toFixed(0) + "%" : "0%"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
+              No source data available
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Leads by Funnel */}
+      {leadsByFunnel.length > 0 && (
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Leads by Funnel</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {leadsByFunnel.map((f) => (
+              <div key={f.funnelId} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 12, color: "var(--text-secondary)", width: 140, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {f.funnelName}
+                </span>
+                <div style={{ flex: 1, height: 20, background: "var(--bg-subtle)", borderRadius: 4, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${(f.count / funnelMaxCount) * 100}%`,
+                      background: "linear-gradient(90deg, #3B82F6, #6366F1)",
+                      borderRadius: 4,
+                      transition: "width 600ms ease",
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", width: 40, textAlign: "right", flexShrink: 0 }}>
+                  {fmt(f.count)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Leads Table */}
+      {recentLeads.length > 0 && (
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Recent Leads</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Name", "Email", "Funnel", "Source", "Status", "Days Since"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", padding: "0 12px 10px 0", borderBottom: "1px solid var(--border-default)", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentLeads.map((lead) => {
+                  const isStale = lead.daysSince > 2 && lead.status.toLowerCase() === "new";
+                  return (
+                    <tr key={lead.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                      <td style={{ padding: "11px 12px 11px 0", fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{lead.name}</td>
+                      <td style={{ padding: "11px 12px 11px 0", fontSize: 12, color: "var(--text-secondary)" }}>{lead.email}</td>
+                      <td style={{ padding: "11px 12px 11px 0", fontSize: 12, color: "var(--text-secondary)", maxWidth: 150 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{lead.funnel}</span>
+                      </td>
+                      <td style={{ padding: "11px 12px 11px 0", fontSize: 12, color: "var(--text-secondary)", textTransform: "capitalize" }}>{lead.source}</td>
+                      <td style={{ padding: "11px 12px 11px 0" }}><StatusBadge status={lead.status} /></td>
+                      <td style={{ padding: "11px 0 11px 0" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: isStale ? "#F43F5E" : "var(--text-secondary)" }}>
+                          {lead.daysSince}d
+                          {isStale && " ⚠"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ─── TAB 5: Revenue ──────────────────────────────────────────────────────────
+
+function RevenueTab({ workspaceId, timeRange }: { workspaceId: string; timeRange: string }) {
+  const [data, setData] = useState<RevenueData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [challengePrice, setChallengePrice] = useState("");
+  const [coachingPrice, setCoachingPrice] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
+  const loadRevenue = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/analytics/revenue?workspaceId=${workspaceId}&timeRange=${timeRange}`);
+      if (!res.ok) throw new Error("Failed to load revenue");
+      const d: RevenueData = await res.json();
+      setData(d);
+      setChallengePrice(d.challengePrice?.toString() ?? "");
+      setCoachingPrice(d.coachingPrice?.toString() ?? "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load revenue");
+    } finally {
+      setLoading(false);
+    }
+  }, [workspaceId, timeRange]);
+
+  useEffect(() => {
+    loadRevenue();
+  }, [loadRevenue]);
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    setSettingsSaved(false);
+    try {
+      await fetch(`/api/workspaces/${workspaceId}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challengeTicketPrice: parseFloat(challengePrice) || 0,
+          coachingProgramPrice: parseFloat(coachingPrice) || 0,
+        }),
+      });
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+      loadRevenue();
+    } catch {
+      // silently fail
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ ...CARD_STYLE, padding: 24 }}><SkeletonBlock height={80} /></div>
+        <div style={{ ...CARD_STYLE, padding: 24 }}><SkeletonBlock height={220} /></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <SectionError message={error} onRetry={loadRevenue} />;
+  }
+
+  if (!data) return null;
+
+  const RevenueSettingsCard = ({ collapsible }: { collapsible?: boolean }) => (
+    <div style={{ ...CARD_STYLE, padding: 24, marginBottom: collapsible ? 0 : 20 }}>
+      {collapsible && (
+        <button
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            width: "100%",
+            marginBottom: settingsOpen ? 16 : 0,
+          }}
+        >
+          <DollarSign size={14} style={{ color: "#10B981" }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", flex: 1, textAlign: "left" }}>Revenue Settings</span>
+          {settingsOpen ? <ChevronUp size={14} style={{ color: "var(--text-tertiary)" }} /> : <ChevronDown size={14} style={{ color: "var(--text-tertiary)" }} />}
+        </button>
+      )}
+      {(!collapsible || settingsOpen) && (
+        <div>
+          {!collapsible && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <DollarSign size={14} style={{ color: "#10B981" }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Revenue Settings</span>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Challenge Ticket Price ($)
+              </label>
+              <input
+                type="number"
+                value={challengePrice}
+                onChange={(e) => setChallengePrice(e.target.value)}
+                placeholder="e.g. 997"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-default)",
+                  background: "var(--bg-surface)",
+                  fontSize: 13,
+                  color: "var(--text-primary)",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Coaching Program Price ($)
+              </label>
+              <input
+                type="number"
+                value={coachingPrice}
+                onChange={(e) => setCoachingPrice(e.target.value)}
+                placeholder="e.g. 3000"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-default)",
+                  background: "var(--bg-surface)",
+                  fontSize: 13,
+                  color: "var(--text-primary)",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
+              <button
+                onClick={saveSettings}
+                disabled={savingSettings}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 8,
+                  background: settingsSaved ? "#10B981" : "#3B82F6",
+                  color: "#fff",
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: savingSettings ? "not-allowed" : "pointer",
+                  opacity: savingSettings ? 0.7 : 1,
+                  transition: "background 300ms",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {savingSettings ? "Saving…" : settingsSaved ? "Saved ✓" : "Save Prices"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  if (!data.hasData) {
+    return (
+      <div>
+        <div
+          style={{
+            ...CARD_STYLE,
+            padding: 48,
+            textAlign: "center",
+            marginBottom: 24,
+          }}
+        >
+          <DollarSign size={40} style={{ color: "#10B981", margin: "0 auto 16px", opacity: 0.6 }} />
+          <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8, letterSpacing: "-0.02em" }}>
+            Revenue Analytics Awaiting Data
+          </h3>
+          <p style={{ fontSize: 14, color: "var(--text-secondary)", maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.6 }}>
+            Mark leads as <strong>Converted</strong> to start seeing revenue analytics, projections, and funnel attribution here.
+          </p>
+          <a
+            href="/dashboard/leads"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 20px",
+              background: "#10B981",
+              color: "#fff",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Go to Leads <ChevronRight size={14} />
+          </a>
+        </div>
+        <RevenueSettingsCard collapsible={false} />
+      </div>
+    );
+  }
+
+  const revenueChartData = data.revenueOverTime.map((d) => ({
+    ...d,
+    month: new Date(d.month + "-01").toLocaleDateString("en-US", { month: "short" }),
+  }));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Revenue settings collapsible */}
+      <RevenueSettingsCard collapsible={true} />
+
+      {/* Hero revenue number */}
+      <div style={{ ...CARD_STYLE, padding: 28 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+              Total Revenue
+            </div>
+            <div style={{ fontSize: 44, fontWeight: 900, color: "#10B981", letterSpacing: "-0.04em", lineHeight: 1 }}>
+              {fmtCurrency(data.totalRevenue)}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 20 }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>Challenge</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.challenge, letterSpacing: "-0.02em" }}>
+                {fmtCurrency(data.revenueByProduct.challenge)}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>Coaching</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.coaching, letterSpacing: "-0.02em" }}>
+                {fmtCurrency(data.revenueByProduct.coaching)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue over time chart */}
+      {revenueChartData.length > 0 && (
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Revenue Over Time</div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={revenueChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              {CHART_GRID}
+              <XAxis dataKey="month" stroke="#A1A1AA" tick={{ fontSize: 11, fill: "#71717A" }} />
+              <YAxis stroke="#A1A1AA" tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={(v) => fmtCurrency(v)} />
+              <Tooltip {...TOOLTIP_STYLE} formatter={(v) => fmtCurrency(Number(v ?? 0))} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="challengeRevenue" name="Challenge" fill={COLORS.challenge} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="coachingRevenue" name="Coaching" fill={COLORS.coaching} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Revenue by Funnel */}
+      {data.revenueByFunnel.length > 0 && (
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Revenue by Funnel</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Funnel", "Type", "Leads", "Conversions", "Conv. Rate", "Revenue"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", padding: "0 12px 10px 0", borderBottom: "1px solid var(--border-default)", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.revenueByFunnel.map((f) => (
+                  <tr key={f.funnelId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{f.name}</td>
+                    <td style={{ padding: "11px 12px 11px 0" }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#06B6D4", background: "rgba(6,182,212,0.08)", borderRadius: 99, padding: "2px 7px", textTransform: "capitalize" }}>
+                        {f.type}
+                      </span>
+                    </td>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>{fmt(f.leads)}</td>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, color: "var(--text-secondary)" }}>{fmt(f.conversions)}</td>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, color: "var(--text-secondary)" }}>{fmtPct(f.convRate)}</td>
+                    <td style={{ padding: "11px 0 11px 0", fontSize: 13, fontWeight: 700, color: "#10B981" }}>{fmtCurrency(f.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Clip Attribution */}
+      {data.clipAttribution.length > 0 && (
+        <div style={{ ...CARD_STYLE, padding: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 16 }}>Clip Revenue Attribution</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Clip", "Views", "Leads", "Conversions", "Revenue"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", fontSize: 10, fontWeight: 600, color: "var(--text-tertiary)", padding: "0 12px 10px 0", borderBottom: "1px solid var(--border-default)", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.clipAttribution.map((c) => (
+                  <tr key={c.clipId} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, fontWeight: 500, color: "var(--text-primary)", maxWidth: 220 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{c.title}</span>
+                    </td>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, color: "var(--text-secondary)" }}>{fmt(c.views)}</td>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, color: "var(--text-secondary)" }}>{fmt(c.leadsGenerated)}</td>
+                    <td style={{ padding: "11px 12px 11px 0", fontSize: 13, color: "var(--text-secondary)" }}>{fmt(c.conversions)}</td>
+                    <td style={{ padding: "11px 0 11px 0", fontSize: 13, fontWeight: 700, color: "#10B981" }}>{fmtCurrency(c.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Projection card */}
+      {data.projection && (
+        <div
+          style={{
+            ...CARD_STYLE,
+            padding: 24,
+            background: "linear-gradient(135deg, rgba(16,185,129,0.04), rgba(16,185,129,0.08))",
+            borderColor: "rgba(16,185,129,0.2)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <TrendingUp size={16} style={{ color: "#10B981" }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Revenue Projection</span>
+          </div>
+          <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>
+            At your current rate of{" "}
+            <strong style={{ color: "var(--text-primary)" }}>{data.projection.monthlyLeads} leads/month</strong>{" "}
+            with a{" "}
+            <strong style={{ color: "var(--text-primary)" }}>{fmtPct(data.projection.convRate)}</strong>{" "}
+            conversion rate, you&apos;re projected to earn{" "}
+            <strong style={{ color: "#10B981", fontSize: 16 }}>{fmtCurrency(data.projection.projectedMonthly)}</strong>{" "}
+            this month.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ─── Main Page Component ─────────────────────────────────────────────────────
+
+type Tab = "overview" | "accounts" | "clips" | "leads" | "revenue";
+type TimeRange = "7d" | "14d" | "30d" | "90d";
+type Platform = "all" | "tiktok" | "instagram";
 
 export default function AnalyticsPage() {
   const { workspace } = useWorkspace();
-  const [activeTab, setActiveTab] = useState<Tab>("Overview");
-  const [timeRange, setTimeRange] = useState("30d");
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  const [platform, setPlatform] = useState<Platform>("all");
   const [syncing, setSyncing] = useState(false);
-  const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
-  // Initial load state — determines which top-level view to show
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [hasAccounts, setHasAccounts] = useState(false);
-  const [hasClips, setHasClips] = useState(false);
+  // Initial activity check — determines whether to show onboarding empty state
+  const [activityChecked, setActivityChecked] = useState(false);
+  const [hasActivity, setHasActivity] = useState(false);
 
-  // Check whether workspace has any activity (accounts or clips posted)
+  // Overview data state
+  const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
+
+  const loadOverview = useCallback(async () => {
+    if (!workspace?.id) return;
+    setOverviewLoading(true);
+    setOverviewError(null);
+    try {
+      const res = await fetch(
+        `/api/analytics/overview?workspaceId=${workspace.id}&timeRange=${timeRange}`
+      );
+      if (!res.ok) throw new Error("Failed to load overview");
+      const data: OverviewData = await res.json();
+      setOverviewData(data);
+    } catch (e: unknown) {
+      setOverviewError(e instanceof Error ? e.message : "Failed to load overview data");
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, [workspace?.id, timeRange]);
+
+  useEffect(() => {
+    if (activeTab === "overview") {
+      loadOverview();
+    }
+  }, [activeTab, loadOverview]);
+
+  // Check whether this workspace has any connected accounts or published clips
   useEffect(() => {
     if (!workspace?.id) return;
     let cancelled = false;
-    async function check() {
-      setInitialLoading(true);
+    async function checkActivity() {
       try {
-        const [accountsRes, overviewRes] = await Promise.all([
+        const [acctRes, overviewRes] = await Promise.all([
           fetch(`/api/analytics/accounts?workspaceId=${workspace!.id}`),
           fetch(`/api/analytics/overview?workspaceId=${workspace!.id}&timeRange=all`),
         ]);
         if (cancelled) return;
-        const accountsJson = accountsRes.ok ? await accountsRes.json() : { accounts: [] };
-        const overviewJson = overviewRes.ok ? await overviewRes.json() : { totalClipsPosted: 0 };
-        setHasAccounts((accountsJson.accounts ?? []).length > 0);
-        setHasClips((overviewJson.totalClipsPosted ?? 0) > 0);
+        const acctJson = acctRes.ok ? await acctRes.json() : { accounts: [] };
+        const ovJson = overviewRes.ok ? await overviewRes.json() : { totalClipsPosted: 0 };
+        const active = (acctJson.accounts ?? []).length > 0 || (ovJson.totalClipsPosted ?? 0) > 0;
+        setHasActivity(active);
       } catch {
-        // On error, show the full dashboard anyway (better than empty state)
-        if (!cancelled) { setHasAccounts(false); setHasClips(false); }
+        setHasActivity(true); // on error, show dashboard rather than empty state
       } finally {
-        if (!cancelled) setInitialLoading(false);
+        if (!cancelled) setActivityChecked(true);
       }
     }
-    check();
+    checkActivity();
     return () => { cancelled = true; };
   }, [workspace?.id]);
 
   const handleSync = async () => {
-    if (!workspace || syncing) return;
+    if (!workspace?.id || syncing) return;
     setSyncing(true);
     try {
       await fetch("/api/analytics/sync", {
@@ -1289,100 +2170,312 @@ export default function AnalyticsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspaceId: workspace.id }),
       });
-      setLastSynced(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-    } catch { /* ignore */ }
-    finally { setSyncing(false); }
+      setLastSynced(new Date());
+      // Reload current tab data after sync
+      if (activeTab === "overview") loadOverview();
+    } catch {
+      // silently fail
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  // Workspace not loaded yet
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "accounts", label: "Accounts" },
+    { id: "clips", label: "Clips" },
+    { id: "leads", label: "Leads" },
+    { id: "revenue", label: "Revenue" },
+  ];
+
+  const TIME_RANGES: { value: TimeRange; label: string }[] = [
+    { value: "7d", label: "7D" },
+    { value: "14d", label: "14D" },
+    { value: "30d", label: "30D" },
+    { value: "90d", label: "90D" },
+  ];
+
+  const PLATFORMS: { value: Platform; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "tiktok", label: "TikTok" },
+    { value: "instagram", label: "Instagram" },
+  ];
+
+  const pillBase: React.CSSProperties = {
+    padding: "6px 14px",
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 600,
+    border: "none",
+    cursor: "pointer",
+    transition: "all 150ms",
+  };
+
+  const activeTabPill: React.CSSProperties = {
+    ...pillBase,
+    background: "#3B82F6",
+    color: "#fff",
+  };
+
+  const inactiveTabPill: React.CSSProperties = {
+    ...pillBase,
+    background: "transparent",
+    color: "var(--text-secondary)",
+  };
+
+  const activeFilterPill: React.CSSProperties = {
+    ...pillBase,
+    padding: "5px 12px",
+    fontSize: 12,
+    background: "#3B82F6",
+    color: "#fff",
+  };
+
+  const inactiveFilterPill: React.CSSProperties = {
+    ...pillBase,
+    padding: "5px 12px",
+    fontSize: 12,
+    background: "transparent",
+    color: "var(--text-secondary)",
+  };
+
   if (!workspace) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--bg-page)" }}>
+      <div className="flex flex-col h-full overflow-auto" style={{ background: "var(--bg-page)" }}>
         <Topbar title="Analytics" />
-        <main style={{ flex: 1, maxWidth: 1280, width: "100%", margin: "0 auto", padding: "24px 40px 48px" }}>
-          <AnalyticsSkeleton />
+        <div style={{ padding: "40px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <SkeletonBlock height={40} width="30%" />
+          <SkeletonBlock height={200} />
+          <SkeletonBlock height={200} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show skeleton while checking activity
+  if (!activityChecked) {
+    return (
+      <div className="flex flex-col h-full overflow-auto" style={{ background: "var(--bg-page)" }}>
+        <Topbar title="Analytics" />
+        <main style={{ maxWidth: 1280, width: "100%", margin: "0 auto", padding: "32px 40px 48px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12 }}>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <SkeletonBlock height={12} width="60%" />
+                  <SkeletonBlock height={28} width="45%" />
+                  <SkeletonBlock height={10} width="80%" />
+                </div>
+              ))}
+            </div>
+            <SkeletonBlock height={280} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <SkeletonBlock height={220} />
+              <SkeletonBlock height={220} />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show onboarding empty state when no accounts and no clips posted
+  if (!hasActivity) {
+    return (
+      <div className="flex flex-col h-full overflow-auto" style={{ background: "var(--bg-page)" }}>
+        <Topbar title="Analytics" />
+        <main style={{ maxWidth: 1280, width: "100%", margin: "0 auto", padding: "32px 40px 48px" }}>
+          <AnalyticsEmptyState />
         </main>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--bg-page)" }}>
+    <div className="flex flex-col h-full overflow-auto" style={{ background: "var(--bg-page)" }}>
       <Topbar title="Analytics" />
 
-      <main style={{ flex: 1, maxWidth: 1280, width: "100%", margin: "0 auto", padding: "24px 40px 48px" }}>
-        {/* Page header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Analytics</h1>
-            <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "3px 0 0" }}>
-              Multi-account performance tracking — revenue analytics for your coaching business.
-            </p>
+      <main
+        style={{
+          maxWidth: 1280,
+          width: "100%",
+          margin: "0 auto",
+          padding: "32px 40px",
+          flex: 1,
+        }}
+      >
+        {/* ── Controls Row ──────────────────────────────────────────────────── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+            marginBottom: 28,
+          }}
+        >
+          {/* Tab pills */}
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              background: "var(--bg-subtle)",
+              borderRadius: 999,
+              padding: "4px",
+            }}
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={activeTab === tab.id ? activeTabPill : inactiveTabPill}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) {
+                    (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-hover)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) {
+                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                  }
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+
+          {/* Right controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {/* Platform filter */}
+            <div
+              style={{
+                display: "flex",
+                gap: 2,
+                background: "var(--bg-subtle)",
+                borderRadius: 999,
+                padding: "3px",
+              }}
+            >
+              {PLATFORMS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setPlatform(p.value)}
+                  style={platform === p.value ? activeFilterPill : inactiveFilterPill}
+                  onMouseEnter={(e) => {
+                    if (platform !== p.value) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-hover)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (platform !== p.value) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    }
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Time range filter */}
+            <div
+              style={{
+                display: "flex",
+                gap: 2,
+                background: "var(--bg-subtle)",
+                borderRadius: 999,
+                padding: "3px",
+              }}
+            >
+              {TIME_RANGES.map((r) => (
+                <button
+                  key={r.value}
+                  onClick={() => setTimeRange(r.value)}
+                  style={timeRange === r.value ? activeFilterPill : inactiveFilterPill}
+                  onMouseEnter={(e) => {
+                    if (timeRange !== r.value) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-hover)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (timeRange !== r.value) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    }
+                  }}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Last synced */}
             {lastSynced && (
-              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Last synced: {lastSynced}</span>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
+                Synced {lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
             )}
+
+            {/* Sync button */}
             <button
               onClick={handleSync}
               disabled={syncing}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--bg-surface)", fontSize: 12, fontWeight: 600, cursor: syncing ? "not-allowed" : "pointer", color: "var(--text-primary)", opacity: syncing ? 0.6 : 1, transition: "all 150ms" }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                background: syncing ? "var(--bg-subtle)" : "#3B82F6",
+                color: syncing ? "var(--text-tertiary)" : "#fff",
+                border: syncing ? "1px solid var(--border-default)" : "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: syncing ? "not-allowed" : "pointer",
+                transition: "all 150ms",
+              }}
             >
-              <RefreshCw size={13} style={{ animation: syncing ? "spin 1s linear infinite" : undefined }} />
+              {syncing ? (
+                <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+              ) : (
+                <RefreshCw size={12} />
+              )}
               {syncing ? "Syncing…" : "Sync Now"}
             </button>
           </div>
         </div>
 
-        {/* Initial loading */}
-        {initialLoading ? (
-          <AnalyticsSkeleton />
-        ) : !hasAccounts && !hasClips ? (
-          /* Empty state — no accounts and no clips */
-          <AnalyticsEmptyState />
-        ) : (
-          <>
-            {/* Global controls: time range */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", background: "var(--bg-subtle)", borderRadius: 20, padding: 3, gap: 2 }}>
-                {TIME_RANGES.map(tr => (
-                  <button
-                    key={tr.value}
-                    onClick={() => setTimeRange(tr.value)}
-                    style={{ padding: "4px 14px", borderRadius: 17, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 150ms", background: timeRange === tr.value ? "var(--accent-blue)" : "transparent", color: timeRange === tr.value ? "#fff" : "var(--text-secondary)" }}
-                  >
-                    {tr.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* ── Tab Content ──────────────────────────────────────────────────── */}
 
-            {/* Tab nav */}
-            <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--border-default)" }}>
-              {TABS.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{ padding: "8px 16px", borderRadius: "8px 8px 0 0", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 150ms", background: activeTab === tab ? "var(--accent-blue)" : "transparent", color: activeTab === tab ? "#fff" : "var(--text-secondary)", borderBottom: activeTab === tab ? "2px solid var(--accent-blue)" : "2px solid transparent", marginBottom: -1 }}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+        {activeTab === "overview" && (
+          <div>
+            {overviewError && <SectionError message={overviewError} onRetry={loadOverview} />}
+            <RevenueFunnel data={overviewData} />
+            <OverviewStatCards data={overviewData} loading={overviewLoading} />
+            <ViewsOverTimeChart data={overviewData} />
+            <EngagementBreakdownChart data={overviewData} />
+            <TopClipsTable clips={overviewData?.topClips ?? []} />
+          </div>
+        )}
 
-            {/* Tab content */}
-            {activeTab === "Overview" && <OverviewTab workspaceId={workspace.id} timeRange={timeRange} />}
-            {activeTab === "Accounts" && <AccountsTab workspaceId={workspace.id} />}
-            {activeTab === "Clips" && <ClipsTab workspaceId={workspace.id} timeRange={timeRange} />}
-            {activeTab === "Leads" && <LeadsTab workspaceId={workspace.id} timeRange={timeRange} />}
-            {activeTab === "Revenue" && <RevenueTab workspaceId={workspace.id} timeRange={timeRange} />}
-          </>
+        {activeTab === "accounts" && (
+          <AccountsTab workspaceId={workspace.id} />
+        )}
+
+        {activeTab === "clips" && (
+          <ClipsTab workspaceId={workspace.id} timeRange={timeRange} />
+        )}
+
+        {activeTab === "leads" && (
+          <LeadsTab workspaceId={workspace.id} timeRange={timeRange} />
+        )}
+
+        {activeTab === "revenue" && (
+          <RevenueTab workspaceId={workspace.id} timeRange={timeRange} />
         )}
       </main>
-
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }
+
