@@ -15,11 +15,13 @@ export async function GET(req: Request) {
   try {
     await requireWorkspaceMember(workspaceId);
   } catch (err: unknown) {
-    const e = err as { status: number; message: string };
-    return NextResponse.json({ error: e.message }, { status: e.status });
+    const status = (err as {status?: number}).status ?? 500;
+    const message = (err as {message?: string}).message ?? "Internal server error";
+    return NextResponse.json({ error: message }, { status });
   }
 
   // Get workspace settings for deal values
+  try {
   const workspace = await db.workspace.findUnique({
     where: { id: workspaceId },
     select: {
@@ -220,4 +222,19 @@ export async function GET(req: Request) {
     },
     hasData: convertedLeads.length > 0,
   });
+  } catch (dbError) {
+    console.error("Analytics revenue DB error:", dbError);
+    return NextResponse.json({
+      totalRevenue: 0,
+      revenueByProduct: { challenge: 0, coaching: 0 },
+      challengePrice: 197,
+      coachingPrice: 6000,
+      revenueOverTime: [],
+      revenueByFunnel: [],
+      clipAttribution: [],
+      projection: { monthlyLeads: 0, convRate: 0, projectedMonthly: 0 },
+      hasData: false,
+    });
+  }
 }
+

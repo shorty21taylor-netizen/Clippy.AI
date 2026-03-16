@@ -15,8 +15,9 @@ export async function GET(req: Request) {
   try {
     await requireWorkspaceMember(workspaceId);
   } catch (err: unknown) {
-    const e = err as { status: number; message: string };
-    return NextResponse.json({ error: e.message }, { status: e.status });
+    const status = (err as {status?: number}).status ?? 500;
+    const message = (err as {message?: string}).message ?? "Internal server error";
+    return NextResponse.json({ error: message }, { status });
   }
 
   const now = new Date();
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
     periodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   }
 
+  try {
   const leads = await db.lead.findMany({
     where: {
       workspaceId,
@@ -123,4 +125,16 @@ export async function GET(req: Request) {
     statusPipeline,
     recentLeads,
   });
+  } catch (dbError) {
+    console.error("Analytics leads DB error:", dbError);
+    return NextResponse.json({
+      stats: { totalLeads: 0, leadsPerDay: 0, topSource: "—", leadToSaleRate: 0 },
+      leadsOverTime: [],
+      leadsByFunnel: [],
+      leadsBySource: { direct: 0, tiktok: 0, instagram: 0, other: 0 },
+      statusPipeline: { new: 0, contacted: 0, qualified: 0, converted: 0, lost: 0 },
+      recentLeads: [],
+    });
+  }
 }
+

@@ -15,10 +15,13 @@ export async function GET(req: Request) {
   try {
     await requireWorkspaceMember(workspaceId);
   } catch (err: unknown) {
-    const e = err as { status: number; message: string };
-    return NextResponse.json({ error: e.message }, { status: e.status });
+    const status = (err as {status?: number}).status ?? 500;
+    const message = (err as {message?: string}).message ?? "Internal server error";
+    return NextResponse.json({ error: message }, { status });
   }
 
+  // ─── DB queries wrapped in try/catch so DB errors return empty-but-valid data ──
+  try {
   // Determine date ranges
   const now = new Date();
   let daysBack = 0;
@@ -309,6 +312,22 @@ export async function GET(req: Request) {
     topClips,
     postingHeatmap: buildHeatmap(publishLogs),
   });
+  } catch (dbError) {
+    console.error("Analytics overview DB error:", dbError);
+    // Return empty-but-valid data so the frontend can render gracefully
+    return NextResponse.json({
+      timeRange,
+      totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0, totalSaves: 0,
+      engagementRate: 0, totalClipsPosted: 0,
+      previousPeriod: { totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0, engagementRate: 0, totalClipsPosted: 0 },
+      trends: { views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, clipsPosted: 0 },
+      viewsOverTime: [],
+      engagementBreakdown: { views: 0, likes: 0, comments: 0, shares: 0, saves: 0 },
+      platformSplit: { tiktok: { views: 0, percentage: 0 }, instagram: { views: 0, percentage: 0 } },
+      topClips: [],
+      postingHeatmap: [],
+    });
+  }
 }
 
 // Build 7×24 posting heatmap from publish logs
@@ -332,3 +351,4 @@ function buildHeatmap(
     return { day, hour, count, avgEngagement: count > 0 ? parseFloat((engSum / count).toFixed(2)) : 0 };
   });
 }
+

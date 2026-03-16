@@ -2385,7 +2385,7 @@ type TimeRange = "7d" | "14d" | "30d" | "90d";
 type Platform = "all" | "tiktok" | "instagram";
 
 export default function AnalyticsPage() {
-  const { workspace } = useWorkspace();
+  const { workspace, isLoading: workspaceLoading } = useWorkspace();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [platform, setPlatform] = useState<Platform>("all");
@@ -2439,25 +2439,34 @@ export default function AnalyticsPage() {
       .catch(() => {});
   }, [workspace?.id]);
 
-  // Check whether this workspace has any connected accounts or published clips
+  // Check whether this workspace has any connected accounts or published clips.
+  // The cancelled flag prevents stale updates when the workspace changes mid-flight,
+  // but setActivityChecked ALWAYS runs so the skeleton never gets permanently stuck.
   useEffect(() => {
     if (!workspace?.id) return;
     let cancelled = false;
     async function checkActivity() {
       try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout
         const [acctRes, overviewRes] = await Promise.all([
-          fetch(`/api/analytics/accounts?workspaceId=${workspace!.id}`),
-          fetch(`/api/analytics/overview?workspaceId=${workspace!.id}&timeRange=all`),
-        ]);
-        if (cancelled) return;
-        const acctJson = acctRes.ok ? await acctRes.json() : { accounts: [] };
-        const ovJson = overviewRes.ok ? await overviewRes.json() : { totalClipsPosted: 0 };
-        const active = (acctJson.accounts ?? []).length > 0 || (ovJson.totalClipsPosted ?? 0) > 0;
-        setHasActivity(active);
+          fetch(`/api/analytics/accounts?workspaceId=${workspace!.id}`, { signal: controller.signal }),
+          fetch(`/api/analytics/overview?workspaceId=${workspace!.id}&timeRange=all`, { signal: controller.signal }),
+        ]).finally(() => clearTimeout(timer));
+        if (!cancelled) {
+          const acctJson = acctRes.ok ? await acctRes.json() : { accounts: [] };
+          const ovJson = overviewRes.ok ? await overviewRes.json() : { totalClipsPosted: 0 };
+          const active = (acctJson.accounts ?? []).length > 0 || (ovJson.totalClipsPosted ?? 0) > 0;
+          setHasActivity(active);
+        }
       } catch {
-        setHasActivity(true); // on error, show dashboard rather than empty state
+        // On any error (network, timeout, auth) — show dashboard rather than empty state
+        // Don't set hasActivity if cancelled (workspace changed) — new effect will run
+        if (!cancelled) setHasActivity(true);
       } finally {
-        if (!cancelled) setActivityChecked(true);
+        // ALWAYS unblock the skeleton, regardless of cancelled state.
+        // If cancelled (workspace changed mid-flight), the new effect will override.
+        setActivityChecked(true);
       }
     }
     checkActivity();
@@ -2550,7 +2559,8 @@ export default function AnalyticsPage() {
     color: "var(--text-secondary)",
   };
 
-  if (!workspace) {
+  // Still waiting for workspace context to resolve
+  if (workspaceLoading && !workspace) {
     return (
       <div className="flex flex-col h-full overflow-auto" style={{ background: "var(--bg-page)" }}>
         <Topbar title="Analytics" />
@@ -2558,6 +2568,29 @@ export default function AnalyticsPage() {
           <SkeletonBlock height={40} width="30%" />
           <SkeletonBlock height={200} />
           <SkeletonBlock height={200} />
+        </div>
+      </div>
+    );
+  }
+
+  // Workspace loaded but user has none — prompt to create one
+  if (!workspace) {
+    return (
+      <div className="flex flex-col h-full overflow-auto" style={{ background: "var(--bg-page)" }}>
+        <Topbar title="Analytics" />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "50vh" }}>
+          <div style={{ textAlign: "center", padding: 40 }}>
+            <BarChart2 size={40} style={{ color: "var(--text-tertiary)", margin: "0 auto 16px" }} />
+            <p style={{ fontSize: 16, color: "var(--text-secondary)", marginBottom: 16 }}>
+              No workspace found. Set one up to start tracking analytics.
+            </p>
+            <a
+              href="/onboarding"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 8, background: "#3B82F6", color: "#fff", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
+            >
+              Set up workspace <ArrowRight size={14} />
+            </a>
+          </div>
         </div>
       </div>
     );

@@ -39,6 +39,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const fetchWorkspaces = useCallback(async () => {
     try {
       const res = await fetch("/api/workspaces");
+      // On any non-ok response (401 unauthenticated, 500 DB error, etc.)
+      // we still fall through to the finally so isLoading becomes false
+      // and the UI can render an appropriate empty/error state.
       if (!res.ok) return;
       const data = await res.json();
       const list: WorkspaceInfo[] = data.workspaces ?? [];
@@ -53,7 +56,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         setWorkspace(found ?? list[0]);
       }
     } catch {
-      // silently fail
+      // Network failure or JSON parse error — isLoading will be set false in finally
     } finally {
       setIsLoading(false);
     }

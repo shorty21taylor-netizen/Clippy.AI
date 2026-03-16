@@ -15,8 +15,9 @@ export async function GET(req: Request) {
   try {
     await requireWorkspaceMember(workspaceId);
   } catch (err: unknown) {
-    const e = err as { status: number; message: string };
-    return NextResponse.json({ error: e.message }, { status: e.status });
+    const status = (err as {status?: number}).status ?? 500;
+    const message = (err as {message?: string}).message ?? "Internal server error";
+    return NextResponse.json({ error: message }, { status });
   }
 
   const now = new Date();
@@ -26,6 +27,7 @@ export async function GET(req: Request) {
     periodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   }
 
+  try {
   const socialAccounts = await db.socialAccount.findMany({
     where: { workspaceId, isActive: true },
     select: {
@@ -107,4 +109,9 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json({ accounts });
+  } catch (dbError) {
+    console.error("Analytics accounts DB error:", dbError);
+    return NextResponse.json({ accounts: [] });
+  }
 }
+

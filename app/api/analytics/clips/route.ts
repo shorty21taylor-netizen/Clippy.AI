@@ -18,8 +18,9 @@ export async function GET(req: Request) {
   try {
     await requireWorkspaceMember(workspaceId);
   } catch (err: unknown) {
-    const e = err as { status: number; message: string };
-    return NextResponse.json({ error: e.message }, { status: e.status });
+    const status = (err as {status?: number}).status ?? 500;
+    const message = (err as {message?: string}).message ?? "Internal server error";
+    return NextResponse.json({ error: message }, { status });
   }
 
   const now = new Date();
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
   }
 
   // Fetch clips through sourceVideos belonging to this workspace
+  try {
   const clips = await db.clip.findMany({
     where: {
       sourceVideo: { workspaceId },
@@ -160,4 +162,9 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json({ clips: sorted });
+  } catch (dbError) {
+    console.error("Analytics clips DB error:", dbError);
+    return NextResponse.json({ clips: [] });
+  }
 }
+

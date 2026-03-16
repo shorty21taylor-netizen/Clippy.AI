@@ -32,8 +32,9 @@ export async function GET(
   try {
     await requireWorkspaceMember(account.workspaceId);
   } catch (err: unknown) {
-    const e = err as { status: number; message: string };
-    return NextResponse.json({ error: e.message }, { status: e.status });
+    const status = (err as {status?: number}).status ?? 500;
+    const message = (err as {message?: string}).message ?? "Internal server error";
+    return NextResponse.json({ error: message }, { status });
   }
 
   // Get recent posts with metrics
@@ -87,3 +88,4 @@ export async function GET(
 
   return NextResponse.json({ account, totals, posts });
 }
+
